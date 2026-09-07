@@ -1,0 +1,57 @@
+{
+  "basis": {
+    "hours": 730,
+    "unit": "EUR/GiB-month",
+    "unit_assumption": "decimal",
+    "vat": "excluding"
+  },
+  "note": "Machine-readable index of published benchmark runs. `prices` holds the normalised storage unit price per dataset row id, computed at the basis above (page defaults). Egress, request and retrieval components are not summarised here — open the run page for those.",
+  "runs": [
+    {
+      "date": "2026-09-07",
+      "path": "runs/2026-09-07/",
+      "commit": "3016e20",
+      "observed": "2026-09-07",
+      "fx": "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF",
+      "rows": 35,
+      "vendors": 14,
+      "prices": {
+        "exo-std": 0.020075,
+        "exo-warm": 0.01233,
+        "exo-cold": 0.00457,
+        "aws-std": 0.021081,
+        "aws-ia": 0.011616,
+        "aws-1z": 0.009293,
+        "aws-gir": 0.004302,
+        "aws-gfr": 0.003485,
+        "aws-da": 0.001549,
+        "az-hot-zrs": 0.01936,
+        "az-hot-lrs": 0.016865,
+        "az-cool-zrs": 0.011272,
+        "az-cold-lrs": 0.003872,
+        "az-arch-lrs": 0.001549,
+        "gcs-std": 0.01979,
+        "gcs-near": 0.011186,
+        "gcs-cold": 0.005163,
+        "gcs-arch": 0.002151,
+        "wasabi": 0.006714,
+        "b2": 0.006421,
+        "hetzner": 0.006819,
+        "ovh-mz-std": 0.013994,
+        "ovh-1z-std": 0.006978,
+        "ovh-ia": 0.009497,
+        "ovh-aa": 0.004504,
+        "ovh-ca": 0.001664,
+        "scw-mz": 0.017244,
+        "scw-1z": 0.008622,
+        "scw-gl": 0.002727,
+        "ionos": 0.007516,
+        "r2-std": 0.013858,
+        "r2-ia": 0.009239,
+        "infomaniak": 0.012501,
+        "stackit": 0.028984,
+        "tcloud": null
+      }
+    }
+  ]
+}

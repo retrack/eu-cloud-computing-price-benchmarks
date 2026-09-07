@@ -1,0 +1,763 @@
+<title>EU Object Storage Benchmark</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F5; --line:#D8DFE7; --line-soft:#E7ECF1;
+  --ink:#0E1A2B; --ink-2:#3B4B60; --muted:#6C7C92;
+  --accent:#DA291C;           /* Exoscale red */
+  --exo:#0B6E4F;              /* Exoscale green, SOS rows */
+  --exo-soft:#E4F2EC;
+  --warn:#A45B00; --warn-soft:#FAF0E2;
+  --bar:#9FB2C6; --bar-exo:#0B6E4F;
+  --shadow:0 1px 2px rgba(14,26,43,.06), 0 8px 24px -16px rgba(14,26,43,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+    --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+    --accent:#FF6155; --exo:#3FCB9B; --exo-soft:#122B24;
+    --warn:#E5A85C; --warn-soft:#2A2116;
+    --bar:#41556B; --bar-exo:#3FCB9B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+  --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+  --accent:#FF6155; --exo:#3FCB9B; --exo-soft:#122B24;
+  --warn:#E5A85C; --warn-soft:#2A2116;
+  --bar:#41556B; --bar-exo:#3FCB9B;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:15px; line-height:1.55; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1400px; margin:0 auto; padding:0 24px 96px}
+
+/* ---------- header ---------- */
+header.masthead{padding:44px 0 26px; border-bottom:3px solid var(--accent)}
+.eyebrow{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 12px;
+}
+h1{
+  font-family:Archivo, "Helvetica Neue", sans-serif; font-weight:700; letter-spacing:-.02em;
+  font-size:clamp(30px,4.4vw,46px); line-height:1.05; margin:0 0 14px; text-wrap:balance;
+}
+.standfirst{max-width:66ch; color:var(--ink-2); font-size:16.5px; margin:0}
+.stamp{
+  display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:18px;
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--muted);
+}
+.stamp b{color:var(--ink-2); font-weight:500}
+
+/* ---------- controls ---------- */
+.controls{
+  position:sticky; top:0; z-index:20; background:var(--surface); border:1px solid var(--line);
+  border-radius:10px; box-shadow:var(--shadow); margin:22px 0 0; padding:16px 18px;
+}
+.controls-grid{display:flex; flex-wrap:wrap; gap:18px 26px; align-items:flex-end}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.field input, .field select{
+  font-family:"IBM Plex Mono", monospace; font-size:14px; font-weight:500; color:var(--ink);
+  background:var(--surface-2); border:1px solid var(--line); border-radius:6px;
+  padding:7px 9px; width:112px;
+}
+.field select{width:auto; min-width:160px}
+.field input:focus-visible, .field select:focus-visible, .tab:focus-visible, .reset:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+.reset{
+  font-family:"IBM Plex Sans"; font-size:13px; color:var(--ink-2); background:none;
+  border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer;
+}
+.reset:hover{border-color:var(--accent); color:var(--accent)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex; gap:2px; margin:30px 0 0; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.tab{
+  font-family:Archivo, sans-serif; font-weight:600; font-size:15px; letter-spacing:-.01em;
+  background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-1px;
+  padding:11px 18px; color:var(--muted); cursor:pointer;
+}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.panel-sub{color:var(--ink-2); margin:16px 0 0; max-width:70ch; font-size:15px}
+
+/* ---------- ranking ---------- */
+.section-title{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin:38px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line-soft);
+}
+.rank{display:grid; grid-template-columns:minmax(150px,auto) 1fr minmax(84px,auto); gap:3px 14px; align-items:center}
+.rank .rk-name{font-size:13.5px; color:var(--ink-2); text-align:right; padding:2px 0; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis}
+.rank .rk-name.is-exo{color:var(--exo); font-weight:600}
+.rank .rk-track{height:17px; position:relative}
+.rank .rk-bar{height:100%; background:var(--bar); border-radius:0 2px 2px 0}
+.rank .rk-bar.is-exo{background:var(--bar-exo)}
+.rank .rk-val{font-family:"IBM Plex Mono", monospace; font-size:12.5px; font-variant-numeric:tabular-nums;
+  color:var(--ink-2)}
+.rank .rk-val.is-exo{color:var(--exo); font-weight:600}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface);
+  box-shadow:var(--shadow); margin-top:14px}
+table{border-collapse:collapse; width:100%; min-width:1240px; font-size:13.5px}
+thead th{
+  background:var(--surface-2);
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; text-align:left; padding:11px 12px; border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+thead th.num{text-align:right}
+thead th.sortable{cursor:pointer; user-select:none; position:relative; padding-right:24px}
+thead th.sortable:hover{color:var(--ink)}
+thead th.sortable:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+thead th.sortable::after{
+  content:"⇅"; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+  font-size:11px; opacity:.32;
+}
+thead th.sortable[aria-sort="ascending"]::after{content:"↑"; opacity:1; color:var(--accent)}
+thead th.sortable[aria-sort="descending"]::after{content:"↓"; opacity:1; color:var(--accent)}
+.sorthint{font-size:12.5px; color:var(--muted); margin:10px 0 0}
+.sorthint button{
+  font:inherit; color:var(--ink-2); background:none; border:1px solid var(--line);
+  border-radius:5px; padding:2px 8px; margin-left:6px; cursor:pointer;
+}
+.sorthint button:hover{border-color:var(--accent); color:var(--accent)}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.is-exo{background:var(--exo-soft)}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.is-exo:hover{background:var(--exo-soft); filter:brightness(1.02)}
+td.num{font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+td.key{font-weight:600; white-space:nowrap}
+tr.is-exo td.key{color:var(--exo)}
+.cls{color:var(--ink-2)}
+.sub{display:block; color:var(--muted); font-size:11.5px; font-weight:400; line-height:1.35; margin-top:2px;
+  white-space:normal; max-width:26ch}
+.np{color:var(--warn); font-family:"IBM Plex Mono", monospace; font-size:12px}
+.free{color:var(--exo); font-weight:600}
+.flag{color:var(--warn); cursor:help; border-bottom:1px dotted var(--warn)}
+.big{font-weight:600}
+
+/* ---------- notes ---------- */
+.notes{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:22px; margin-top:44px}
+.note h3{
+  font-family:Archivo, sans-serif; font-size:15px; font-weight:600; margin:0 0 8px; letter-spacing:-.01em;
+}
+.note p, .note li{color:var(--ink-2); font-size:13.8px; margin:0 0 8px}
+.note ul{margin:0; padding-left:18px}
+.note li{margin-bottom:6px}
+.note code{font-family:"IBM Plex Mono", monospace; font-size:12.5px; background:var(--surface-2);
+  padding:1px 4px; border-radius:3px}
+.srcs{margin-top:36px; padding-top:18px; border-top:1px solid var(--line)}
+.srcs ul{list-style:none; padding:0; margin:10px 0 0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:4px 24px}
+.srcs li{font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--muted)}
+.srcs a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line)}
+.srcs a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+@media (max-width:640px){
+  .wrap{padding:0 14px 64px}
+  .rank{grid-template-columns:minmax(110px,auto) 1fr minmax(74px,auto)}
+}
+</style>
+
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Exoscale SOS · competitive pricing</p>
+  <h1>Object storage in Europe:<br>what a gigabyte actually costs</h1>
+  <p class="standfirst">Every rate was read on 7 September 2026 from the vendors' own pricing pages and normalised to a single basis: <strong>euros per GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. The scenario cost on each row recalculates with your own volumes.</p>
+  <div class="stamp">
+    <span>Observed <b>2026-09-07</b></span>
+    <span>Basis <b id="stamp-hours">730 h/month</b></span>
+    <span>Unit <b>GiB (2³⁰ bytes)</b></span>
+    <span>FX <b id="stamp-fx"></b></span>
+    <span>Prices <b>excl. VAT</b></span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-grid">
+    <div class="field"><label for="in-stored">Stored (TiB)</label><input id="in-stored" type="number" min="0" step="1" value="100"></div>
+    <div class="field"><label for="in-egress">Egress (TiB/month)</label><input id="in-egress" type="number" min="0" step="0.5" value="10"></div>
+    <div class="field"><label for="in-put">PUT (millions/month)</label><input id="in-put" type="number" min="0" step="0.5" value="2"></div>
+    <div class="field"><label for="in-get">GET (millions/month)</label><input id="in-get" type="number" min="0" step="1" value="20"></div>
+    <div class="field"><label for="in-hours">Hours per month</label>
+      <select id="in-hours">
+        <option value="720">720 h — 30-day month</option>
+        <option value="730" selected>730 h — annual average</option>
+        <option value="744">744 h — 31-day month</option>
+      </select></div>
+    <div class="field"><label for="in-unit">“GB” left undefined by the vendor</label>
+      <select id="in-unit">
+        <option value="decimal" selected>treat as decimal GB (10⁹)</option>
+        <option value="binary">treat as GiB (2³⁰)</option>
+      </select></div>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="panel-sub" id="panel-sub"></p>
+
+<h2 class="section-title" id="rank-title">Normalised storage price — € per GiB per month</h2>
+<div class="rank" id="rank"></div>
+
+<h2 class="section-title">Rate detail and scenario cost</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr id="thead-row">
+      <th class="sortable" data-sort="vendor">Vendor</th>
+      <th class="sortable" data-sort="cls">Class · region</th>
+      <th>Published rate</th>
+      <th class="num sortable" data-sort="unit">€/GiB-month</th>
+      <th class="num sortable" data-sort="egress">Egress</th>
+      <th class="num sortable" data-sort="put">PUT / GET<br>per 1,000</th>
+      <th class="num sortable" data-sort="retr">Retrieval</th>
+      <th class="num sortable" data-sort="mindays">Min. duration</th>
+      <th>Redundancy</th>
+      <th class="num sortable" data-sort="cost">Scenario cost<br>€/month</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p class="sorthint">Click a column header to sort; click again to reverse.
+  <button type="button" id="unsort">Reset order</button></p>
+
+<div class="notes">
+  <div class="note">
+    <h3>Who states their unit, and who doesn't</h3>
+    <ul>
+      <li><b>Binary, stated in writing</b> — AWS (“1 GB is 2³⁰ bytes”), Azure, Google (“JEDEC binary gigabytes”), Exoscale (billed per GiB-hour), OVHcloud (GiB column), Wasabi (1 TB = 1,024 GB).</li>
+      <li><b>Not stated</b> — Hetzner, Backblaze, Scaleway, IONOS, Cloudflare, Infomaniak, STACKIT. Those rows carry a <span class="flag">marker</span> and follow the selector at the top of the page. The gap between the two assumptions is 7.4 %.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Regions are not interchangeable</h3>
+    <ul>
+      <li><b>OVHcloud</b>: the 3-AZ multi-zone offer exists only in Paris and Milan. In Frankfurt/Limburg it is single-zone — that is the row to compare against Frankfurt.</li>
+      <li><b>Backblaze</b>: the European region is Amsterdam, not Frankfurt.</li>
+      <li><b>Infomaniak</b>: Switzerland. <b>STACKIT</b>: Germany South. <b>Exoscale</b>: 8 zones across CH/DE/AT/BG/HR.</li>
+      <li><b>Azure Hot LRS</b> is single-datacentre: the honest comparison against S3 Standard is Hot ZRS.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Documented gaps, left as gaps</h3>
+    <ul>
+      <li><b>STACKIT</b> publishes neither traffic nor request pricing. Its scenario cost is therefore a floor, marked <span class="np">≥</span>.</li>
+      <li><b>T Cloud Public</b> (formerly Open Telekom Cloud) publishes no storage price at all: calculator only.</li>
+      <li><b>IONOS</b> shows €0.007/GB/30 d on the German page and $0.00487/GB/30 d on the US page — a ~44 % gap FX does not explain.</li>
+      <li><b>Wasabi</b> publishes no rate card for its commitment discounts: the “max discount” on the current chart cannot be sourced.</li>
+      <li><b>Exoscale</b> charges no requests, but nowhere states so explicitly.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Scenario assumptions</h3>
+    <ul>
+      <li>Retrieval fees apply to the month's egress volume: pulling 10 TiB out of a cold class means restoring it first.</li>
+      <li>Storage and egress volume tiers are applied tier by tier, not at an average rate.</li>
+      <li>Minimum storage durations are not monetised — that needs a churn rate specific to each workload. The column states them.</li>
+      <li>Minimum billable object sizes (128 KiB at Exoscale and AWS, 64 KB at Hetzner, 4 KB at Wasabi) weigh heavily on a small-object estate and are likewise not monetised.</li>
+      <li>Prices exclude VAT, negotiated discounts and commitment terms.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>How the rates were collected</h3>
+    <p>AWS, Azure, Google, Hetzner and Exoscale render their prices in JavaScript: values were read from the rendered DOM with the region explicitly selected, or straight from the price feeds those pages consume (AWS <code>meteredUnitMaps</code> files, the Azure Retail Prices API, Hetzner's price API). Two cautions:</p>
+    <ul>
+      <li>Hetzner's launch press release still shows €4.99/month and €0.0067/TB·h; its price API — the one feeding the product page — returns <b>€6.49 and €0.0087/TB·h</b>. The latter is what is used here.</li>
+      <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="srcs">
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 7 September 2026</h2>
+  <ul>
+    <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a></li>
+    <li><a href="https://www.exoscale.com/object-storage/classes/">exoscale.com/object-storage/classes</a></li>
+    <li><a href="https://aws.amazon.com/s3/pricing/">aws.amazon.com/s3/pricing</a> (eu-central-1)</li>
+    <li><a href="https://azure.microsoft.com/en-us/pricing/details/storage/blobs/">azure.microsoft.com — Blob Storage</a></li>
+    <li><a href="https://cloud.google.com/storage/pricing">cloud.google.com/storage/pricing</a> (europe-west3)</li>
+    <li><a href="https://wasabi.com/pricing">wasabi.com/pricing</a></li>
+    <li><a href="https://www.hetzner.com/storage/object-storage/">hetzner.com — Object Storage</a></li>
+    <li><a href="https://www.backblaze.com/cloud-storage/pricing">backblaze.com — B2 pricing</a></li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://cloud.ionos.de/storage/object-storage">cloud.ionos.de — Object Storage</a></li>
+    <li><a href="https://developers.cloudflare.com/r2/pricing/">developers.cloudflare.com/r2/pricing</a></li>
+    <li><a href="https://www.infomaniak.com/en/hosting/public-cloud/prices">infomaniak.com — public cloud</a></li>
+    <li><a href="https://stackit.com/en/products/storage/stackit-object-storage">stackit.com — price list v1.0.43</a></li>
+    <li><a href="https://www.t-cloud-public.com/en/prices">t-cloud-public.com/prices</a></li>
+    <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage_lens_metrics_glossary.html">AWS — binary definition of “GB”</a></li>
+  </ul>
+</div>
+</div>
+
+<script>
+// Object storage price dataset — observed 2026-09-07 from official vendor pages.
+// Storage rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
+const FX = { EUR: 1, USD: 0.860437, CHF: 1.063264 }; // EUR per 1 unit — ECB 2026-09-04 (frankfurter.dev)
+const FX_NOTE = "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF";
+const GIB = 1.073741824; // billable decimal GB per physical GiB
+
+const T = (upTo, r) => ({ upTo, r }); // upTo = cumulative GiB threshold
+const INF = Infinity;
+
+const ROWS = [
+  /* ---------------- EXOSCALE ---------------- */
+  { id:"exo-std", vendor:"Exoscale", brand:true, cls:"SOS Standard", region:"CH · DE · AT · BG · HR",
+    cur:"EUR", unit:"GiB", bill:"h",
+    tiers:[T(524288,0.00002750), T(1048576,0.00001875), T(INF,0.00001389)],
+    tierNote:"3 volume tiers: ≤512 TiB / 512 TiB–1 PiB / >1 PiB",
+    egress:{ free:0, unit:"GiB", cur:"EUR", tiers:[T(INF,0.02)] },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0, minDays:0, minObj:"128 KiB", az:"1 zone · 3 replicas", sla:"99.95 %",
+    src:"exoscale.com/pricing" },
+  { id:"exo-warm", vendor:"Exoscale", brand:true, cls:"SOS Warm", region:"CH · DE · AT · BG · HR",
+    cur:"EUR", unit:"GiB", bill:"h",
+    tiers:[T(INF,0.00001689)],
+    egress:{ free:0, unit:"GiB", cur:"EUR", tiers:[T(INF,0.02)] },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0.009, retrievalCur:"EUR", retrievalUnit:"GiB",
+    minDays:30, minObj:"128 KiB", az:"1 zone · 3 replicas", sla:"99.9 %",
+    src:"exoscale.com/object-storage/classes" },
+  { id:"exo-cold", vendor:"Exoscale", brand:true, cls:"SOS Cold & Archival", region:"CH · DE · AT · BG · HR",
+    cur:"EUR", unit:"GiB", bill:"h",
+    tiers:[T(INF,0.00000626)],
+    tierNote:"one class, listed as both Cold and Archival",
+    egress:{ free:0, unit:"GiB", cur:"EUR", tiers:[T(INF,0.02)] },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0.027, retrievalCur:"EUR", retrievalUnit:"GiB",
+    minDays:90, minObj:"128 KiB · 10 TB minimum billed per bucket",
+    az:"1 zone · 3 replicas", sla:"99.85 %",
+    src:"exoscale.com/object-storage/classes" },
+
+  /* ---------------- AWS ---------------- */
+  { id:"aws-std", vendor:"AWS S3", cls:"Standard", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m",
+    tiers:[T(51200,0.0245), T(512000,0.0235), T(INF,0.0225)],
+    tierNote:"50 TB / 450 TB / above (AWS TB = 2⁴⁰)",
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.0054, get:0.00043, retrieval:0, minDays:0, minObj:"—", az:"≥3 AZ", sla:"99.9 %",
+    src:"aws.amazon.com/s3/pricing" },
+  { id:"aws-ia", vendor:"AWS S3", cls:"Standard-IA", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0135)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.01, get:0.001, retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:30, minObj:"128 KB", az:"≥3 AZ", src:"aws.amazon.com/s3/pricing" },
+  { id:"aws-1z", vendor:"AWS S3", cls:"One Zone-IA", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0108)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.01, get:0.001, retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:30, minObj:"128 KB", az:"1 AZ", src:"aws.amazon.com/s3/pricing" },
+  { id:"aws-gir", vendor:"AWS S3", cls:"Glacier Instant Retrieval", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.005)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.02, get:0.01, retrieval:0.03, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:90, minObj:"128 KB", az:"≥3 AZ", src:"aws.amazon.com/s3/pricing" },
+  { id:"aws-gfr", vendor:"AWS S3", cls:"Glacier Flexible Retrieval", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.00405)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.036, get:0.00043, retrieval:0.012, retrievalCur:"USD", retrievalUnit:"GiB",
+    retrievalNote:"Standard restore; Bulk free, Expedited $0.036/GiB",
+    minDays:90, minObj:"+40 KB metadata per object", az:"≥3 AZ", src:"aws.amazon.com/s3/pricing" },
+  { id:"aws-da", vendor:"AWS S3", cls:"Glacier Deep Archive", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0018)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.09), T(51200,0.085), T(153600,0.07), T(INF,0.05)] },
+    put:0.06, get:0.00043, retrieval:0.024, retrievalCur:"USD", retrievalUnit:"GiB",
+    retrievalNote:"Standard restore; Bulk $0.005/GiB",
+    minDays:180, minObj:"+40 KB metadata per object", az:"≥3 AZ", src:"aws.amazon.com/s3/pricing" },
+
+  /* ---------------- AZURE ---------------- */
+  { id:"az-hot-zrs", vendor:"Azure Blob", cls:"Hot ZRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(51200,0.0225), T(512000,0.0216), T(INF,0.0207)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.087), T(51200,0.083), T(153600,0.07), T(INF,0.05)] },
+    put:0.0054, get:0.00043, retrieval:0, minDays:0, minObj:"not published", az:"3 AZ", src:"azure.microsoft.com/pricing/details/storage/blobs" },
+  { id:"az-hot-lrs", vendor:"Azure Blob", cls:"Hot LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(51200,0.0196), T(512000,0.0188), T(INF,0.018)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.087), T(51200,0.083), T(153600,0.07), T(INF,0.05)] },
+    put:0.0054, get:0.00043, retrieval:0, minDays:0, minObj:"not published", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/blobs" },
+  { id:"az-cool-zrs", vendor:"Azure Blob", cls:"Cool ZRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0131)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.087), T(51200,0.083), T(153600,0.07), T(INF,0.05)] },
+    put:0.01, get:0.001, retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:30, minObj:"not published", az:"3 AZ", src:"azure.microsoft.com/pricing/details/storage/blobs" },
+  { id:"az-cold-lrs", vendor:"Azure Blob", cls:"Cold LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0045)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.087), T(51200,0.083), T(153600,0.07), T(INF,0.05)] },
+    put:0.018, get:0.010, retrieval:0.03, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:90, minObj:"not published", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/blobs" },
+  { id:"az-arch-lrs", vendor:"Azure Blob", cls:"Archive LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0018)],
+    egress:{ free:100, unit:"GiB", cur:"USD", tiers:[T(10240,0.087), T(51200,0.083), T(153600,0.07), T(INF,0.05)] },
+    put:0.012, get:0.5375, retrieval:0.024, retrievalCur:"USD", retrievalUnit:"GiB",
+    retrievalNote:"high-priority read: $0.13/GiB and $65 per 10,000 ops",
+    minDays:180, minObj:"not published", az:"single datacentre · no ZRS Archive in Frankfurt", src:"azure.microsoft.com/pricing/details/storage/blobs" },
+
+  /* ---------------- GOOGLE ---------------- */
+  { id:"gcs-std", vendor:"Google Cloud Storage", cls:"Standard", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.023)],
+    egress:{ free:0, unit:"GiB", cur:"USD", tiers:[T(10240,0.12), T(153600,0.11), T(INF,0.08)],
+             note:"no free tier in europe-west3" },
+    put:0.005, get:0.0004, retrieval:0, minDays:0, minObj:"—", az:"multi-zone within the region", src:"cloud.google.com/storage/pricing" },
+  { id:"gcs-near", vendor:"Google Cloud Storage", cls:"Nearline", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.013)],
+    egress:{ free:0, unit:"GiB", cur:"USD", tiers:[T(10240,0.12), T(153600,0.11), T(INF,0.08)] },
+    put:0.01, get:0.001, retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:30, minObj:"—", az:"multi-zone within the region", src:"cloud.google.com/storage/pricing" },
+  { id:"gcs-cold", vendor:"Google Cloud Storage", cls:"Coldline", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.006)],
+    egress:{ free:0, unit:"GiB", cur:"USD", tiers:[T(10240,0.12), T(153600,0.11), T(INF,0.08)] },
+    put:0.02, get:0.01, retrieval:0.02, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:90, minObj:"—", az:"multi-zone within the region", src:"cloud.google.com/storage/pricing" },
+  { id:"gcs-arch", vendor:"Google Cloud Storage", cls:"Archive", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0025)],
+    egress:{ free:0, unit:"GiB", cur:"USD", tiers:[T(10240,0.12), T(153600,0.11), T(INF,0.08)] },
+    put:0.05, get:0.05, retrieval:0.05, retrievalCur:"USD", retrievalUnit:"GiB",
+    minDays:365, minObj:"—", az:"multi-zone within the region", src:"cloud.google.com/storage/pricing" },
+
+  /* ---------------- WASABI / BACKBLAZE / HETZNER ---------------- */
+  { id:"wasabi", vendor:"Wasabi", cls:"Hot Cloud Storage", region:"Europe (AMS/FRA/LDN)",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,7.99/1024)],
+    tierNote:"$7.99/TB where 1 TB = 1,024 GB (base 2) → $0.0078/GiB",
+    egress:{ free:"stored", unit:"GiB", cur:"USD", tiers:[T(INF,0)],
+             note:"free while monthly egress ≤ stored volume; beyond that Wasabi may throttle the account" },
+    put:0, get:0, reqNote:"all request types free",
+    retrieval:0, minDays:90, minObj:"4 KB · 1 TB minimum billed per month", az:"not published",
+    src:"wasabi.com/pricing" },
+  { id:"b2", vendor:"Backblaze B2", cls:"B2 Cloud Storage", region:"EU Central · Amsterdam",
+    cur:"USD", unit:"GB?", bill:"m", tiers:[T(INF,6.95/1000)],
+    tierNote:"$6.95/TB; Backblaze does not state a decimal or binary basis",
+    egress:{ free:"3xstored", unit:"GB?", cur:"USD", tiers:[T(INF,0.01)],
+             note:"free up to 3× the stored volume, then $0.01/GB" },
+    put:0, get:0, reqNote:"class A, B and C free; class D $0.004 per 10,000",
+    retrieval:0, minDays:0, minObj:"none · first 10 GB free", az:"not published",
+    src:"backblaze.com/cloud-storage/pricing" },
+  { id:"hetzner", vendor:"Hetzner", cls:"Object Storage", region:"FSN1 · NBG1 (DE) · HEL1",
+    cur:"EUR", unit:"GB?", bill:"h", tiers:[T(INF,0.0000087)],
+    tierNote:"€6.49/month base including 1 TB storage + 1 TB egress, then €0.0087 per TB·h",
+    base:{ fee:6.49, inclUnits:1000 },
+    egress:{ free:"base", unit:"GB?", cur:"EUR", tiers:[T(INF,0.001)] },
+    put:0, get:0, reqNote:"S3 API calls free",
+    retrieval:0, minDays:0, minObj:"64 KB", az:"not published",
+    src:"hetzner.com/storage/object-storage" },
+
+  /* ---------------- EUROPEAN PROVIDERS ---------------- */
+  { id:"ovh-mz-std", vendor:"OVHcloud", cls:"Standard Multi-AZ", region:"Paris · Milan (not Frankfurt)",
+    cur:"EUR", unit:"GiB", bill:"h", tiers:[T(51200,0.00001917), T(512000,0.00001712), T(INF,0.00001506)],
+    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)], note:"egress free for EU customers" },
+    put:0, get:0, reqNote:"API requests free", retrieval:0, minDays:0, minObj:"not published", az:"3 AZ",
+    src:"ovhcloud.com/public-cloud/prices" },
+  { id:"ovh-1z-std", vendor:"OVHcloud", cls:"Standard One Zone", region:"Limburg (DE) · Gravelines",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0081103)],
+    tierNote:"rate only found on the USD price page",
+    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
+    put:0, get:0, reqNote:"API requests free", retrieval:0, minDays:0, minObj:"not published", az:"1 zone",
+    src:"ovhcloud.com/public-cloud/prices" },
+  { id:"ovh-ia", vendor:"OVHcloud", cls:"Infrequent Access Multi-AZ", region:"Paris · Milan",
+    cur:"EUR", unit:"GiB", bill:"h", tiers:[T(INF,0.00001301)],
+    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
+    put:0, get:0, reqNote:"API requests free",
+    retrieval:0.004, retrievalCur:"EUR", retrievalUnit:"GiB", minDays:30, minObj:"not published", az:"3 AZ",
+    src:"ovhcloud.com/public-cloud/prices" },
+  { id:"ovh-aa", vendor:"OVHcloud", cls:"Active Archive", region:"Paris · Milan",
+    cur:"EUR", unit:"GiB", bill:"h", tiers:[T(INF,0.00000617)],
+    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
+    put:0, get:0, reqNote:"API requests free",
+    retrieval:0.018, retrievalCur:"EUR", retrievalUnit:"GiB", minDays:90, minObj:"not published", az:"3 AZ",
+    src:"ovhcloud.com/public-cloud/prices" },
+  { id:"ovh-ca", vendor:"OVHcloud", cls:"Cold Archive", region:"Paris · Milan",
+    cur:"EUR", unit:"GiB", bill:"h", tiers:[T(INF,0.00000228)],
+    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
+    put:0, get:0, reqNote:"API requests free",
+    retrieval:0.009, retrievalCur:"EUR", retrievalUnit:"GiB", minDays:180, minObj:"not published", az:"3 AZ",
+    src:"ovhcloud.com/public-cloud/prices" },
+  { id:"scw-mz", vendor:"Scaleway", cls:"Standard Multi-AZ", region:"fr-par · nl-ams · pl-waw",
+    cur:"EUR", unit:"GB?", bill:"m", tiers:[T(INF,0.01606)],
+    egress:{ free:75, unit:"GB?", cur:"EUR", tiers:[T(INF,0.01)] },
+    put:0, get:0, reqNote:"requests included", retrieval:0, minDays:0,
+    minObj:"minimum billable unit: 1 GB·hour", az:"multi-AZ (count not published)",
+    src:"scaleway.com/pricing/storage" },
+  { id:"scw-1z", vendor:"Scaleway", cls:"One Zone – IA", region:"fr-par · nl-ams · pl-waw",
+    cur:"EUR", unit:"GB?", bill:"m", tiers:[T(INF,0.00803)],
+    egress:{ free:75, unit:"GB?", cur:"EUR", tiers:[T(INF,0.01)] },
+    put:0, get:0, reqNote:"requests included", retrieval:0, minDays:0,
+    minObj:"1 GB·hour", az:"1 zone", src:"scaleway.com/pricing/storage" },
+  { id:"scw-gl", vendor:"Scaleway", cls:"Glacier", region:"fr-par · nl-ams · pl-waw",
+    cur:"EUR", unit:"GB?", bill:"m", tiers:[T(INF,0.00254)],
+    egress:{ free:75, unit:"GB?", cur:"EUR", tiers:[T(INF,0.01)] },
+    put:0, get:0, reqNote:"requests included",
+    retrieval:0.009, retrievalCur:"EUR", retrievalUnit:"GB?", minDays:0,
+    minObj:"1 GB·hour", az:"not published", src:"scaleway.com/pricing/storage" },
+  { id:"ionos", vendor:"IONOS", cls:"Object Storage", region:"Germany · Spain · USA",
+    cur:"EUR", unit:"GB?", bill:"m", tiers:[T(INF,0.007)],
+    tierNote:"⚠ DE page: €0.007/GB/30 d; US page: $0.00487/GB/30 d — a ~44 % gap FX does not explain",
+    egress:{ free:2000, unit:"GB?", cur:"USD", tiers:[T(INF,0.036)], note:"tiers found on the US page only" },
+    put:0, get:0, reqNote:"PUT/GET/DELETE free", retrieval:0, minDays:0, minObj:"not published",
+    az:"local replication; geo-redundancy optional at extra cost", src:"cloud.ionos.de/storage/object-storage" },
+  { id:"r2-std", vendor:"Cloudflare R2", cls:"Standard", region:"global · EU jurisdiction available",
+    cur:"USD", unit:"GB?", bill:"m", tiers:[T(INF,0.015)],
+    egress:{ free:INF, unit:"GB?", cur:"USD", tiers:[T(INF,0)], note:"zero egress fees" },
+    put:0.0045, get:0.00036, retrieval:0, minDays:0, minObj:"rounded up to the next billing unit · 10 GB free", az:"not published",
+    src:"developers.cloudflare.com/r2/pricing" },
+  { id:"r2-ia", vendor:"Cloudflare R2", cls:"Infrequent Access", region:"global · EU jurisdiction available",
+    cur:"USD", unit:"GB?", bill:"m", tiers:[T(INF,0.010)],
+    egress:{ free:INF, unit:"GB?", cur:"USD", tiers:[T(INF,0)] },
+    put:0.009, get:0.0009, retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GB?",
+    minDays:30, minObj:"not published", az:"not published", src:"developers.cloudflare.com/r2/pricing" },
+  { id:"infomaniak", vendor:"Infomaniak", cls:"Public Cloud Object Storage", region:"Switzerland",
+    cur:"CHF", unit:"GB?", bill:"h", tiers:[T(INF,0.000015)],
+    egress:{ free:10000, unit:"GB?", cur:"CHF", tiers:[T(INF,0.009)], note:"10 TB/month included per organisation" },
+    put:null, get:null, reqNote:"request pricing not published",
+    retrieval:0, minDays:0, minObj:"not published", az:"not published for object storage",
+    src:"infomaniak.com/hosting/public-cloud/prices" },
+  { id:"stackit", vendor:"STACKIT", cls:"Object Storage Premium EU01", region:"Germany South",
+    cur:"EUR", unit:"GB?", bill:"h", tiers:[T(INF,0.00003697772)],
+    egress:{ free:0, unit:"GB?", cur:"EUR", tiers:null, note:"no traffic line item in the official price list" },
+    put:null, get:null, reqNote:"request pricing not published",
+    retrieval:0, minDays:0, minObj:"not published", az:"“distributed across several locations”, no AZ model published",
+    src:"stackit.com — price list v1.0.43 (04.08.2026)" },
+  { id:"tcloud", vendor:"T Cloud Public", cls:"OBS Standard / Warm / Cold", region:"Germany (formerly Open Telekom Cloud)",
+    cur:"EUR", unit:"GB?", bill:"m", tiers:null,
+    tierNote:"storage price not published — calculator and console only",
+    egress:{ free:1, unit:"GB?", cur:"EUR", tiers:null, note:"1 GB/month free, rate beyond that not published" },
+    put:0.007, get:0.007, reqNote:"€0.007 per 1,000 requests (standard class)",
+    retrieval:0, minDays:30, minObj:"not published", az:"3 availability zones",
+    src:"t-cloud-public.com/prices" }
+];
+
+const PANELS = {
+  actuel: { label:"Core set",
+    sub:"Exoscale SOS against the S3-compatible providers most often shortlisted alongside it in Europe.",
+    ids:["exo-cold","exo-warm","exo-std","aws-std","aws-ia","aws-gir","aws-da","wasabi","hetzner","b2","infomaniak","stackit"] },
+  hyper: { label:"Hyperscalers",
+    sub:"AWS, Azure and Google in their Frankfurt region, every storage class, against the four SOS classes.",
+    ids:["exo-cold","exo-warm","exo-std","aws-std","aws-ia","aws-1z","aws-gir","aws-gfr","aws-da","az-hot-zrs","az-hot-lrs","az-cool-zrs","az-cold-lrs","az-arch-lrs","gcs-std","gcs-near","gcs-cold","gcs-arch"] },
+  eu: { label:"European providers",
+    sub:"European and low-cost alternatives, shown against the regions each one actually operates.",
+    ids:["exo-cold","exo-warm","exo-std","ovh-mz-std","ovh-1z-std","ovh-ia","ovh-aa","ovh-ca","scw-mz","scw-1z","scw-gl","ionos","r2-std","r2-ia","hetzner","infomaniak","stackit","tcloud"] }
+};
+
+
+/* ---------------- calculation engine ---------------- */
+const S = { stored:100, egress:10, put:2, get:20, hours:730, unitMode:"decimal", panel:"actuel" };
+const TIB = 1024; // GiB per TiB
+
+function uf(unit){
+  if(unit === "GiB") return 1;
+  if(unit === "GB")  return GIB;
+  return S.unitMode === "decimal" ? GIB : 1;      // unit not stated by the vendor
+}
+function tierCost(qtyGiB, tiers){
+  let cost = 0, prev = 0;
+  for(const t of tiers){
+    const upTo = Math.min(t.upTo, qtyGiB);
+    if(upTo > prev){ cost += (upTo - prev) * t.r; prev = upTo; }
+    if(prev >= qtyGiB) break;
+  }
+  return cost;
+}
+function storageCost(r, storedGiB){
+  if(!r.tiers) return null;
+  const h = r.bill === "h" ? S.hours : 1;
+  const units = storedGiB * uf(r.unit);
+  if(r.base){
+    const over = Math.max(0, units - r.base.inclUnits);
+    return (r.base.fee + over * r.tiers[0].r * h) * FX[r.cur];
+  }
+  return tierCost(units, r.tiers.map(t => ({ upTo: t.upTo === Infinity ? Infinity : t.upTo * uf(r.unit), r: t.r })))
+         * h * FX[r.cur];
+}
+function unitPrice(r){
+  if(!r.tiers) return null;
+  const h = r.bill === "h" ? S.hours : 1;
+  return r.tiers[0].r * h * uf(r.unit) * FX[r.cur];
+}
+function freeAllowance(r, storedGiB){
+  const f = r.egress.free;
+  if(f === Infinity) return Infinity;
+  if(f === "stored") return storedGiB;
+  if(f === "3xstored") return 3 * storedGiB;
+  if(f === "base") return r.base.inclUnits / uf(r.egress.unit);
+  return f / uf(r.egress.unit);   // allowance expressed in the vendor's own unit
+}
+function egressCost(r, egressGiB, storedGiB){
+  if(!r.egress.tiers) return null;
+  const free = freeAllowance(r, storedGiB);
+  const billable = Math.max(0, egressGiB - (free === Infinity ? egressGiB : free));
+  if(billable === 0) return 0;
+  const f = uf(r.egress.unit);
+  return tierCost(billable, r.egress.tiers) * f * FX[r.egress.cur];
+}
+function reqCost(r){
+  if(r.put === null || r.get === null) return null;
+  return ((S.put * 1e6 / 1000) * r.put + (S.get * 1e6 / 1000) * r.get) * FX[r.cur];
+}
+function retrievalCost(r, egressGiB){
+  if(!r.retrieval) return 0;
+  return egressGiB * r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur];
+}
+function scenario(r){
+  const storedGiB = S.stored * TIB, egressGiB = S.egress * TIB;
+  const parts = [storageCost(r, storedGiB), egressCost(r, egressGiB, storedGiB), reqCost(r), retrievalCost(r, egressGiB)];
+  const partial = parts.some(p => p === null);
+  const total = parts.reduce((a, p) => a + (p || 0), 0);
+  return { total, partial, hasPrice: r.tiers !== null };
+}
+
+/* ---------------- formatting ---------------- */
+const fmtU = v => v === null ? "—" : (v < 0.01 ? v.toFixed(5) : v.toFixed(4));
+const fmtE = v => Math.round(v).toLocaleString("en-GB");
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const UNKNOWN_UNIT = u => u === "GB?";
+
+function publishedRate(r){
+  if(!r.tiers) return '<span class="np">not published</span>';
+  const u = r.unit === "GiB" ? "GiB" : "GB";
+  return r.base
+    ? "€" + r.base.fee.toFixed(2) + "/mo + €" + r.tiers[0].r.toFixed(7) + "/" + u + "·h"
+    : r.tiers[0].r + " " + (r.cur === "EUR" ? "€" : r.cur === "USD" ? "$" : "CHF") + "/" + u + (r.bill === "h" ? "·h" : "-month");
+}
+function egressCell(r){
+  if(!r.egress.tiers) return '<span class="np">not published</span>';
+  const first = r.egress.tiers[0].r;
+  if(first === 0) return '<span class="free">free</span>';
+  return (first * uf(r.egress.unit) * FX[r.egress.cur]).toFixed(4) + " €";
+}
+
+/* ---------------- rendering ---------------- */
+const SORT = { col:null, dir:1 };
+function render(){
+  const panel = PANELS[S.panel];
+  let rows = panel.ids.map(id => ROWS.find(r => r.id === id));
+  document.getElementById("panel-sub").textContent = panel.sub;
+  document.getElementById("stamp-hours").textContent = S.hours + " h/month";
+
+  // ranking
+  const priced = rows.filter(r => r.tiers).map(r => ({ r, v: unitPrice(r) })).sort((a, b) => a.v - b.v);
+  const max = Math.max(...priced.map(p => p.v));
+  document.getElementById("rank").innerHTML = priced.map(({ r, v }) => {
+    const exo = r.brand ? " is-exo" : "";
+    const w = Math.max(1.5, v / max * 100);
+    return '<div class="rk-name' + exo + '">' + esc(r.vendor) + " · " + esc(r.cls) + '</div>'
+      + '<div class="rk-track"><div class="rk-bar' + exo + '" style="width:' + w.toFixed(2) + '%"></div></div>'
+      + '<div class="rk-val' + exo + '">' + fmtU(v) + " €</div>";
+  }).join("");
+
+  // sorting
+  const sortVal = {
+    vendor:  r => r.vendor + " " + r.cls,
+    cls:     r => r.cls,
+    unit:    r => unitPrice(r),
+    egress:  r => r.egress.tiers ? r.egress.tiers[0].r * uf(r.egress.unit) * FX[r.egress.cur] : null,
+    put:     r => r.put === null ? null : r.put * FX[r.cur],
+    retr:    r => r.tiers === null ? null : (r.retrieval || 0) * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur],
+    mindays: r => r.minDays,
+    cost:    r => { const sc = scenario(r); return sc.hasPrice ? sc.total : null; }
+  };
+  if(SORT.col){
+    const get = sortVal[SORT.col];
+    rows = rows.slice().sort((a, b) => {
+      const x = get(a), y = get(b);
+      if(typeof x === "string") return SORT.dir * x.localeCompare(y);
+      const xa = x === null || x === undefined ? Infinity : x;   // unpriced rows always last
+      const ya = y === null || y === undefined ? Infinity : y;
+      if(xa === ya) return (a.vendor + a.cls).localeCompare(b.vendor + b.cls);
+      return SORT.dir * (xa - ya);
+    });
+  }
+  [...document.querySelectorAll("th.sortable")].forEach(th => {
+    th.setAttribute("aria-sort",
+      th.dataset.sort === SORT.col ? (SORT.dir === 1 ? "ascending" : "descending") : "none");
+  });
+
+  // table
+  document.getElementById("tbody").innerHTML = rows.map(r => {
+    const sc = scenario(r);
+    const exo = r.brand ? ' class="is-exo"' : "";
+    const flag = UNKNOWN_UNIT(r.unit)
+      ? ' <span class="flag" title="Unit not stated by the vendor — converted according to the selector at the top of the page">&#9651;</span>' : "";
+    const req = (r.put === null)
+      ? '<span class="np">not published</span>'
+      : (r.put === 0 && r.get === 0
+          ? '<span class="free">free</span>'
+          : (r.put * FX[r.cur]).toFixed(4) + " / " + (r.get * FX[r.cur]).toFixed(5) + " €");
+    const retr = r.retrieval
+      ? (r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur]).toFixed(4) + " €"
+      : (r.tiers ? '<span class="free">—</span>' : "—");
+    const cost = !sc.hasPrice
+      ? '<span class="np">n/a</span>'
+      : (sc.partial ? '<span class="np">≥</span> ' : "") + "<b>" + fmtE(sc.total) + "</b>";
+    return "<tr" + exo + ">"
+      + '<td class="key">' + esc(r.vendor) + (r.planned ? '<span class="sub">' + esc(r.planned) + "</span>" : "") + "</td>"
+      + '<td class="cls">' + esc(r.cls) + '<span class="sub">' + esc(r.region) + "</span></td>"
+      + "<td>" + publishedRate(r) + flag + (r.tierNote ? '<span class="sub">' + esc(r.tierNote) + "</span>" : "") + "</td>"
+      + '<td class="num big">' + fmtU(unitPrice(r)) + "</td>"
+      + '<td class="num">' + egressCell(r) + (r.egress.note ? '<span class="sub" style="text-align:left">' + esc(r.egress.note) + "</span>" : "") + "</td>"
+      + '<td class="num">' + req + (r.reqNote ? '<span class="sub" style="text-align:left">' + esc(r.reqNote) + "</span>" : "") + "</td>"
+      + '<td class="num">' + retr + (r.retrievalNote ? '<span class="sub" style="text-align:left">' + esc(r.retrievalNote) + "</span>" : "") + "</td>"
+      + '<td class="num">' + (r.minDays ? r.minDays + " d" : "—") + '<span class="sub" style="text-align:left">' + esc(r.minObj) + "</span></td>"
+      + "<td>" + esc(r.az) + (r.sla ? '<span class="sub">SLA ' + esc(r.sla) + "</span>" : "") + "</td>"
+      + '<td class="num">' + cost + "</td>"
+      + "</tr>";
+  }).join("");
+}
+
+/* ---------------- interface ---------------- */
+document.getElementById("stamp-fx").textContent = FX_NOTE.replace("ECB 04.09.2026: ", "");
+const tabsEl = document.getElementById("tabs");
+tabsEl.innerHTML = Object.entries(PANELS).map(([k, p], i) =>
+  '<button class="tab" role="tab" data-k="' + k + '" aria-selected="' + (i === 0) + '">' + esc(p.label) + "</button>").join("");
+tabsEl.addEventListener("click", e => {
+  const b = e.target.closest(".tab"); if(!b) return;
+  S.panel = b.dataset.k;
+  [...tabsEl.children].forEach(t => t.setAttribute("aria-selected", t === b));
+  render();
+});
+[...document.querySelectorAll("th.sortable")].forEach(th => { th.tabIndex = 0; });
+document.getElementById("thead-row").addEventListener("keydown", e => {
+  if(e.key !== "Enter" && e.key !== " ") return;
+  const th = e.target.closest("th.sortable"); if(!th) return;
+  e.preventDefault(); th.click();
+});
+document.getElementById("thead-row").addEventListener("click", e => {
+  const th = e.target.closest("th.sortable"); if(!th) return;
+  const col = th.dataset.sort;
+  if(SORT.col === col && SORT.dir === 1)      SORT.dir = -1;
+  else if(SORT.col === col && SORT.dir === -1){ SORT.col = null; SORT.dir = 1; }
+  else                                        { SORT.col = col; SORT.dir = 1; }
+  render();
+});
+document.getElementById("unsort").addEventListener("click", () => {
+  SORT.col = null; SORT.dir = 1; render();
+});
+const bind = (id, key, num) => {
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => {
+    S[key] = num ? (parseFloat(el.value) || 0) : el.value;
+    render();
+  });
+};
+bind("in-stored", "stored", true); bind("in-egress", "egress", true);
+bind("in-put", "put", true); bind("in-get", "get", true);
+bind("in-hours", "hours", true); bind("in-unit", "unitMode", false);
+document.getElementById("reset").addEventListener("click", () => {
+  const d = { "in-stored":100, "in-egress":10, "in-put":2, "in-get":20, "in-hours":730, "in-unit":"decimal" };
+  for(const [id, v] of Object.entries(d)) document.getElementById(id).value = v;
+  Object.assign(S, { stored:100, egress:10, put:2, get:20, hours:730, unitMode:"decimal" });
+  render();
+});
+render();
+</script>

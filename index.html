@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EU Object Storage Benchmark</title>
+<meta name="description" content="Object storage list prices in Europe, normalised to euros per GiB per month. Published readings, one per run.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F5; --line:#D8DFE7; --line-soft:#E7ECF1;
+  --ink:#0E1A2B; --ink-2:#3B4B60; --muted:#6C7C92;
+  --accent:#DA291C;
+  --exo:#0B6E4F;
+  --shadow:0 1px 2px rgba(14,26,43,.06), 0 8px 24px -16px rgba(14,26,43,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+    --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+    --accent:#FF6155; --exo:#3FCB9B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+  --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+  --accent:#FF6155; --exo:#3FCB9B;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:15px; line-height:1.55; margin:0; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 24px 96px}
+a{color:var(--accent)}
+a:hover{text-decoration:none}
+
+header.masthead{padding:44px 0 26px; border-bottom:3px solid var(--accent)}
+.eyebrow{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 12px;
+}
+h1{
+  font-family:Archivo, "Helvetica Neue", sans-serif; font-weight:700; letter-spacing:-.02em;
+  font-size:clamp(30px,4.4vw,46px); line-height:1.05; margin:0 0 14px; text-wrap:balance;
+}
+.standfirst{max-width:66ch; color:var(--ink-2); font-size:16.5px; margin:0}
+.stamp{
+  display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:18px;
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--muted);
+}
+.stamp b{color:var(--ink-2); font-weight:500}
+
+.section-title{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin:42px 0 14px; padding-bottom:8px;
+  border-bottom:1px solid var(--line-soft);
+}
+
+.run{
+  display:block; background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:20px 22px; text-decoration:none; color:inherit;
+}
+.run + .run{margin-top:12px}
+.run:hover{border-color:var(--accent)}
+.run-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 14px}
+.run-date{
+  font-family:"IBM Plex Mono", monospace; font-size:19px; font-weight:600; letter-spacing:-.01em;
+  color:var(--ink);
+}
+.tag{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  font-weight:600; color:var(--exo); border:1px solid currentColor; border-radius:999px; padding:2px 9px;
+}
+.run-meta{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--muted);
+  margin:10px 0 0; display:flex; flex-wrap:wrap; gap:4px 20px;
+}
+.run-meta b{color:var(--ink-2); font-weight:500}
+.run-note{color:var(--ink-2); font-size:14.5px; margin:12px 0 0; max-width:62ch}
+.run-open{
+  font-family:Archivo, sans-serif; font-weight:600; font-size:14px; color:var(--accent);
+  margin:14px 0 0; display:inline-block;
+}
+
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:20px 22px;
+}
+.card.soft{background:var(--surface-2); box-shadow:none; border-style:dashed}
+.card h3{
+  font-family:Archivo, sans-serif; font-size:16px; font-weight:600; letter-spacing:-.01em;
+  margin:0 0 8px;
+}
+.card p{color:var(--ink-2); margin:0; font-size:14.5px; max-width:64ch}
+.card p + p{margin-top:10px}
+ul.plain{margin:10px 0 0; padding-left:19px; color:var(--ink-2); font-size:14.5px}
+ul.plain li{margin:5px 0}
+code{
+  font-family:"IBM Plex Mono", monospace; font-size:12.5px; background:var(--surface-2);
+  border:1px solid var(--line-soft); border-radius:4px; padding:1px 5px;
+}
+.card.soft code{background:var(--surface)}
+
+footer{
+  margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:13px; color:var(--muted); max-width:70ch;
+}
+footer p{margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Price benchmark · Europe</p>
+  <h1>EU Object Storage Benchmark</h1>
+  <p class="standfirst">
+    Object storage list prices from the vendors' own pricing pages, normalised so the numbers are
+    actually comparable: one hour basis, one unit, one currency — <b>euros per GiB per month, 730 hours</b>,
+    Frankfurt or the closest region each vendor operates.
+  </p>
+  <div class="stamp">
+    <span>Latest reading <b>7 September 2026</b></span>
+    <span>14 vendors · 35 storage classes</span>
+    <span><a href="https://github.com/retrack/eu-object-storage-benchmark">Source repository</a></span>
+  </div>
+</header>
+
+<h2 class="section-title">Runs</h2>
+
+<a class="run" href="runs/2026-09-07/">
+  <div class="run-head">
+    <span class="run-date">2026-09-07</span>
+    <span class="tag">Latest</span>
+  </div>
+  <div class="run-meta">
+    <span>14 vendors · <b>35 classes</b></span>
+    <span>FX <b>ECB 04.09.2026</b></span>
+    <span>commit <b>3016e20</b></span>
+  </div>
+  <p class="run-note">
+    First published reading. Three panels — core set, hyperscalers, European providers — each with a
+    ranked chart and a sortable table covering storage, egress, requests, retrieval, minimum duration
+    and redundancy. The scenario cost recalculates live from the controls at the top of the page.
+  </p>
+  <span class="run-open">Open the reading →</span>
+</a>
+
+<h2 class="section-title">Trend</h2>
+
+<div class="card soft">
+  <h3>Not yet — one reading is not a trend</h3>
+  <p>
+    A dashboard tracking how these prices move goes here once there are enough readings to draw a line
+    through. Each run's normalised storage prices are already recorded per vendor row in
+    <a href="runs.json">runs.json</a>, so the history is being accumulated from the first run onward.
+  </p>
+</div>
+
+<h2 class="section-title">How to read a run</h2>
+
+<div class="card">
+  <p>
+    Published object storage prices are not comparable as printed. Three things differ between vendors
+    and quietly move the figure by 10 % or more:
+  </p>
+  <ul class="plain">
+    <li><b>The unit.</b> Several vendors bill in binary units while printing “GB”; others state no basis
+      at all. Decimal versus binary is a 7.4 % difference on the same physical bytes. Rows whose vendor
+      never states a basis carry a △ marker and follow the page's unit selector.</li>
+    <li><b>The month.</b> Hourly-billed vendors are extrapolated using 720, 730 or 744 hours depending on
+      who does the extrapolating. This benchmark uses 730 throughout, and the selector lets you change it.</li>
+    <li><b>What the headline excludes.</b> Egress, requests, retrieval fees, minimum storage durations and
+      minimum billable object sizes — often where the money actually is — are shown alongside the storage rate.</li>
+  </ul>
+  <p>
+    Anything a vendor does not publish is shown as <i>not published</i>, never estimated, and a scenario
+    total containing one is prefixed <code>≥</code> rather than silently treated as zero.
+  </p>
+</div>
+
+<footer>
+  <p>
+    Maintained by <a href="https://github.com/retrack">Antoine Coetsier</a>, who works at Exoscale;
+    Exoscale's rows are highlighted in the tables. Figures are taken from competitors' own published
+    pages and every source is listed at the bottom of each run. Treat this as a starting point for your
+    own verification, not as an authority — list prices ignore negotiated discounts and commitment terms,
+    which are where large deals are actually decided.
+  </p>
+  <p>
+    Readings go stale silently: a run more than a month old should not be relied on.
+  </p>
+  <p>
+    EU Object Storage Benchmark — <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+    Reuse and adapt with credit; if you change the normalisation basis, say so.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>
