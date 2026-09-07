@@ -1,0 +1,10 @@
+# internal commentary — never published
+NOTES-internal.md
+
+# superseded versions kept locally
+archive/
+
+# scratch
+.DS_Store
+__pycache__/
+*.pyc
