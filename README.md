@@ -116,4 +116,16 @@ listed at the bottom of the page — but treat this as a starting point for your
 verification, not as an authority. List prices ignore negotiated discounts and commitment
 terms, which are where large deals are actually decided.
 
-No licence is attached. If you want to reuse the dataset, open an issue.
+## Licence
+
+[Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
+(CC BY 4.0) — see `LICENSE`. Reuse, adapt and redistribute the dataset and the page, including
+commercially, as long as you give credit:
+
+> EU Object Storage Benchmark, Antoine Coetsier — https://github.com/retrack/eu-object-storage-benchmark — CC BY 4.0
+
+If you adapt the figures or change the normalisation basis, say so, so a reader does not
+attribute your numbers to this reading.
+
+The licence covers this repository's own content. It does not cover the vendors' published
+prices themselves, which are facts, nor any vendor trademark named in the tables.

@@ -23,6 +23,7 @@ changes for our own slide, how to use it in a customer conversation — lives in
 | `tools/build.py` | assembles `data.js` + template → `eu-object-storage-benchmark.html` |
 | `tools/update_fx.py` | refreshes the EUR/USD and EUR/CHF rates inside `data.js` |
 | `README.md` | public repository README |
+| `LICENSE` | CC BY 4.0 |
 | `NOTES-internal.md` | internal commentary — gitignored, stays local |
 | `archive/` | superseded versions, including the original French edition |
 
