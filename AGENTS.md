@@ -147,6 +147,25 @@ stamp in the page header, and the sources heading — all in `page.template.html
 
 ---
 
+## Publishing
+
+The site lives on the `gh-pages` branch, served at
+https://retrack.github.io/eu-object-storage-benchmark/ — an `index.html` listing the runs,
+one `runs/<YYYY-MM-DD>/index.html` per published reading, and `runs.json` holding every row's
+normalised storage price so a trend dashboard has a history to draw from. That branch carries
+no source; its own `README.md` documents the step-by-step publish procedure, including the
+one-liner that regenerates the `prices` block so every run is computed the same way.
+
+```bash
+git worktree add ../ghp gh-pages
+cp eu-object-storage-benchmark.html ../ghp/runs/$(date +%F)/index.html
+```
+
+Publish a run only after the verification step above — the site is the public face of the
+reading, and a run cannot be silently corrected once someone has cited its date.
+
+---
+
 ## Normalisation conventions
 
 - Basis **730 h/month** (annual average), prices in **€/GiB-month**, excluding VAT.

@@ -4,8 +4,10 @@ A single-page, dependency-free comparison of **object storage list prices in Eur
 normalised so the numbers are actually comparable: **euros per GiB per month, 730 hours**,
 Frankfurt region or the closest each vendor operates.
 
-Open `eu-object-storage-benchmark.html` in a browser. Nothing to install, no build step
-required to view it, no network calls beyond a web font.
+Published readings: **https://retrack.github.io/eu-object-storage-benchmark/**
+
+Or open `eu-object-storage-benchmark.html` from a clone in a browser. Nothing to install, no
+build step required to view it, no network calls beyond a web font.
 
 Prices observed **7 September 2026**. See *Refreshing the data* below — a reading more
 than a month old should not be trusted.
