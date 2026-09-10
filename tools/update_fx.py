@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""Refresh the EUR/USD and EUR/CHF rates inside data.js.
+"""Refresh the EUR/USD and EUR/CHF rates inside every dataset.
 
 Usage
   python3 tools/update_fx.py                          fetch the latest ECB rates
   python3 tools/update_fx.py --usd 1.1622 --chf 0.9405 --date 2026-09-04
                                                       set them by hand
+  python3 tools/update_fx.py --only block-data.js     rewrite one dataset only
   add --dry-run to print the new lines without writing
 
 Rates are quoted the ECB way: units of foreign currency per 1 EUR. The script inverts
-them into the EUR-per-unit factors the page multiplies by, then rewrites the `FX` and
-`FX_NOTE` lines in data.js in place. Run tools/build.py afterwards.
+them into the EUR-per-unit factors the pages multiply by, then rewrites the `FX` and
+`FX_NOTE` lines in data.js and block-data.js in place. Run tools/build.py afterwards.
+
+A dataset carries the FX rate that was current when its prices were read. Refreshing FX
+without re-reading the prices is legitimate — the rates are independent — but do it for
+both datasets at once, or the two pages will quote different rates on the same day.
 
 If the fetch fails with a proxy or egress error, read the rates off
 https://www.ecb.europa.eu/stats/eurofxref/ (or api.frankfurter.dev/v1/latest?base=EUR)
@@ -19,7 +24,7 @@ import argparse, datetime, json, pathlib, re, sys, urllib.request
 
 API = "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD,CHF"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = ROOT / "data.js"
+DATASETS = [ROOT / "data.js", ROOT / "block-data.js"]
 
 
 def fetch():
@@ -33,6 +38,7 @@ def main():
     ap.add_argument("--usd", type=float, help="USD per 1 EUR (skips the fetch)")
     ap.add_argument("--chf", type=float, help="CHF per 1 EUR (skips the fetch)")
     ap.add_argument("--date", help="reference date YYYY-MM-DD, used with --usd/--chf")
+    ap.add_argument("--only", help="rewrite a single dataset file instead of all of them")
     args = ap.parse_args()
 
     if args.usd and args.chf:
@@ -63,13 +69,17 @@ def main():
     if args.dry_run:
         return
 
-    src = DATA.read_text(encoding="utf-8")
-    new = re.sub(r"^const FX = \{.*$", fx_line, src, count=1, flags=re.M)
-    new = re.sub(r"^const FX_NOTE = .*$", note_line, new, count=1, flags=re.M)
-    if new == src:
-        sys.exit("data.js unchanged — check that the FX / FX_NOTE lines still match the patterns")
-    DATA.write_text(new, encoding="utf-8")
-    print(f"\n{DATA} updated. Now run: python3 tools/build.py")
+    targets = [ROOT / args.only] if args.only else DATASETS
+    print()
+    for path in targets:
+        src = path.read_text(encoding="utf-8")
+        new = re.sub(r"^const FX = \{.*$", fx_line, src, count=1, flags=re.M)
+        new = re.sub(r"^const FX_NOTE = .*$", note_line, new, count=1, flags=re.M)
+        if new == src:
+            sys.exit(f"{path.name} unchanged — check that the FX / FX_NOTE lines still match the patterns")
+        path.write_text(new, encoding="utf-8")
+        print(f"{path} updated")
+    print("\nNow run: python3 tools/build.py")
 
 
 if __name__ == "__main__":
