@@ -1,57 +1,360 @@
 {
-  "basis": {
+ "note": "Machine-readable index of published benchmark runs. Two independent series: `object` (price per GiB of data stored) and `block` (price per GiB of capacity provisioned). The two are not comparable and must never share an axis.",
+ "series": {
+  "object": {
+   "label": "Object storage",
+   "basis": {
     "hours": 730,
     "unit": "EUR/GiB-month",
     "unit_assumption": "decimal",
     "vat": "excluding"
-  },
-  "note": "Machine-readable index of published benchmark runs. `prices` holds the normalised storage unit price per dataset row id, computed at the basis above (page defaults). Egress, request and retrieval components are not summarised here — open the run page for those.",
-  "runs": [
+   },
+   "prices": "`prices` holds the normalised storage unit price per dataset row id. Egress, request and retrieval components are not summarised here - open the run page for those.",
+   "runs": [
     {
-      "date": "2026-09-07",
-      "path": "runs/2026-09-07/",
-      "commit": "3016e20",
-      "observed": "2026-09-07",
-      "fx": "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF",
-      "rows": 35,
-      "vendors": 14,
-      "prices": {
-        "exo-std": 0.020075,
-        "exo-warm": 0.01233,
-        "exo-cold": 0.00457,
-        "aws-std": 0.021081,
-        "aws-ia": 0.011616,
-        "aws-1z": 0.009293,
-        "aws-gir": 0.004302,
-        "aws-gfr": 0.003485,
-        "aws-da": 0.001549,
-        "az-hot-zrs": 0.01936,
-        "az-hot-lrs": 0.016865,
-        "az-cool-zrs": 0.011272,
-        "az-cold-lrs": 0.003872,
-        "az-arch-lrs": 0.001549,
-        "gcs-std": 0.01979,
-        "gcs-near": 0.011186,
-        "gcs-cold": 0.005163,
-        "gcs-arch": 0.002151,
-        "wasabi": 0.006714,
-        "b2": 0.006421,
-        "hetzner": 0.006819,
-        "ovh-mz-std": 0.013994,
-        "ovh-1z-std": 0.006978,
-        "ovh-ia": 0.009497,
-        "ovh-aa": 0.004504,
-        "ovh-ca": 0.001664,
-        "scw-mz": 0.017244,
-        "scw-1z": 0.008622,
-        "scw-gl": 0.002727,
-        "ionos": 0.007516,
-        "r2-std": 0.013858,
-        "r2-ia": 0.009239,
-        "infomaniak": 0.012501,
-        "stackit": 0.028984,
-        "tcloud": null
-      }
+     "date": "2026-09-07",
+     "path": "runs/2026-09-07/",
+     "commit": "3016e20",
+     "observed": "2026-09-07",
+     "fx": "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF",
+     "rows": 35,
+     "vendors": 14,
+     "prices": {
+      "exo-std": 0.020075,
+      "exo-warm": 0.01233,
+      "exo-cold": 0.00457,
+      "aws-std": 0.021081,
+      "aws-ia": 0.011616,
+      "aws-1z": 0.009293,
+      "aws-gir": 0.004302,
+      "aws-gfr": 0.003485,
+      "aws-da": 0.001549,
+      "az-hot-zrs": 0.01936,
+      "az-hot-lrs": 0.016865,
+      "az-cool-zrs": 0.011272,
+      "az-cold-lrs": 0.003872,
+      "az-arch-lrs": 0.001549,
+      "gcs-std": 0.01979,
+      "gcs-near": 0.011186,
+      "gcs-cold": 0.005163,
+      "gcs-arch": 0.002151,
+      "wasabi": 0.006714,
+      "b2": 0.006421,
+      "hetzner": 0.006819,
+      "ovh-mz-std": 0.013994,
+      "ovh-1z-std": 0.006978,
+      "ovh-ia": 0.009497,
+      "ovh-aa": 0.004504,
+      "ovh-ca": 0.001664,
+      "scw-mz": 0.017244,
+      "scw-1z": 0.008622,
+      "scw-gl": 0.002727,
+      "ionos": 0.007516,
+      "r2-std": 0.013858,
+      "r2-ia": 0.009239,
+      "infomaniak": 0.012501,
+      "stackit": 0.028984,
+      "tcloud": null
+     }
     }
-  ]
+   ]
+  },
+  "block": {
+   "label": "Block storage",
+   "basis": {
+    "hours": 730,
+    "unit": "EUR/GiB-month",
+    "unit_assumption": "decimal",
+    "vat": "excluding",
+    "scenario": {
+     "provisioned_gib": 2048,
+     "volumes": 4,
+     "iops_per_volume": 3000,
+     "mbs_per_volume": 125,
+     "snapshot_gib": 1024
+    },
+    "note": "Block storage bills provisioned capacity, not stored data. The per-row figures depend on the scenario above because free IOPS baselines and Azure fixed disk sizes are per volume."
+   },
+   "prices": "`prices` holds two figures per dataset row id: `capacity` (the capacity line alone) and `effective` (capacity plus provisioned IOPS, throughput and snapshots), both in EUR per provisioned GiB-month at the basis above. `short` marks a row whose published ceiling cannot deliver the scenario; `partial` marks one with an unpublished component.",
+   "runs": [
+    {
+     "date": "2026-09-10",
+     "path": "runs/block/2026-09-10/",
+     "commit": "d81339c",
+     "observed": "2026-09-10",
+     "fx": "ECB 09.09.2026: 1 EUR = 1.1652 USD = 0.9404 CHF",
+     "rows": 37,
+     "vendors": 11,
+     "prices": {
+      "exo-bs": {
+       "capacity": 0.1022,
+       "effective": 0.1533,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "aws-gp3": {
+       "capacity": 0.081703,
+       "effective": 0.104875,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "aws-gp2": {
+       "capacity": 0.102128,
+       "effective": 0.1253,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "aws-io2": {
+       "capacity": 0.127875,
+       "effective": 0.543281,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "aws-io1": {
+       "capacity": 0.127875,
+       "effective": 0.543281,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "aws-st1": {
+       "capacity": 0.046344,
+       "effective": 0.069516,
+       "partial": false,
+       "short": false,
+       "media": "hdd"
+      },
+      "aws-sc1": {
+       "capacity": 0.015448,
+       "effective": 0.03862,
+       "partial": false,
+       "short": false,
+       "media": "hdd"
+      },
+      "aws-mag": {
+       "capacity": 0.050635,
+       "effective": 0.073807,
+       "partial": false,
+       "short": false,
+       "media": "hdd"
+      },
+      "az-pv2": {
+       "capacity": 0.081445,
+       "effective": 0.122168,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "az-ultra": {
+       "capacity": 0.133445,
+       "effective": 0.610698,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "az-p-lrs": {
+       "capacity": 0.135002,
+       "effective": 0.156458,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "az-p-zrs": {
+       "capacity": 0.202504,
+       "effective": 0.223959,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "az-e-lrs": {
+       "capacity": 0.064367,
+       "effective": 0.085822,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "az-s-lrs": {
+       "capacity": 0.036474,
+       "effective": 0.05793,
+       "partial": false,
+       "short": true,
+       "media": "hdd"
+      },
+      "g-hd-bal": {
+       "capacity": 0.080673,
+       "effective": 0.10599,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "g-hd-ha": {
+       "capacity": 0.162032,
+       "effective": 0.18735,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "g-hd-ext": {
+       "capacity": 0.127017,
+       "effective": 0.343423,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "g-hd-tput": {
+       "capacity": 0.005149,
+       "effective": 0.092277,
+       "partial": false,
+       "short": false,
+       "media": "hdd"
+      },
+      "g-pd-bal": {
+       "capacity": 0.102987,
+       "effective": 0.128304,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "g-pd-ssd": {
+       "capacity": 0.175077,
+       "effective": 0.200395,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "g-pd-std": {
+       "capacity": 0.041195,
+       "effective": 0.066512,
+       "partial": false,
+       "short": false,
+       "media": "hdd"
+      },
+      "g-pd-rbal": {
+       "capacity": 0.205973,
+       "effective": 0.231291,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "ovh-rc": {
+       "capacity": 0.045097,
+       "effective": 0.067646,
+       "partial": false,
+       "short": true,
+       "media": "ssd"
+      },
+      "ovh-classic": {
+       "capacity": 0.045097,
+       "effective": 0.067646,
+       "partial": false,
+       "short": true,
+       "media": "ssd"
+      },
+      "ovh-hs": {
+       "capacity": 0.092342,
+       "effective": 0.11489,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "ovh-hs2": {
+       "capacity": 0.092342,
+       "effective": 0.11489,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "scw-5k": {
+       "capacity": 0.101898,
+       "effective": 0.121102,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "scw-15k": {
+       "capacity": 0.138738,
+       "effective": 0.157942,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "het-vol": {
+       "capacity": 0.047245,
+       "effective": 0.047245,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "ion-ess": {
+       "capacity": 0.043546,
+       "effective": 0.065319,
+       "partial": false,
+       "short": true,
+       "media": [
+        "hdd",
+        "ssd"
+       ]
+      },
+      "ion-bal": {
+       "capacity": 0.076206,
+       "effective": 0.097979,
+       "partial": false,
+       "short": false,
+       "media": "ssd"
+      },
+      "ion-perf": {
+       "capacity": 0.163298,
+       "effective": 0.185071,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "inf-p1": {
+       "capacity": 0.100021,
+       "effective": 0.150032,
+       "partial": false,
+       "short": true,
+       "media": "ssd"
+      },
+      "inf-p2": {
+       "capacity": 0.200042,
+       "effective": 0.250053,
+       "partial": false,
+       "short": true,
+       "media": "ssd"
+      },
+      "inf-p3": {
+       "capacity": 0.291728,
+       "effective": 0.341738,
+       "partial": false,
+       "short": false,
+       "media": "premium"
+      },
+      "stackit": {
+       "capacity": 0.071144,
+       "effective": 0.223476,
+       "partial": false,
+       "short": false,
+       "media": "?"
+      },
+      "tcloud": {
+       "capacity": null,
+       "effective": null,
+       "partial": true,
+       "short": false,
+       "media": [
+        "hdd",
+        "ssd",
+        "premium"
+       ]
+      }
+     }
+    }
+   ]
+  }
+ }
 }

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EU Object Storage Benchmark</title>
-<meta name="description" content="Object storage list prices in Europe, normalised to euros per GiB per month. Published readings, one per run.">
+<title>EU Storage Price Benchmarks</title>
+<meta name="description" content="Object and block storage list prices in Europe, normalised to euros per GiB per month. Published readings, one per run.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -117,20 +117,21 @@ footer p{margin:0 0 8px}
 
 <header class="masthead">
   <p class="eyebrow">Price benchmark · Europe</p>
-  <h1>EU Object Storage Benchmark</h1>
+  <h1>EU Storage Price Benchmarks</h1>
   <p class="standfirst">
-    Object storage list prices from the vendors' own pricing pages, normalised so the numbers are
+    Cloud storage list prices from the vendors' own pricing pages, normalised so the numbers are
     actually comparable: one hour basis, one unit, one currency — <b>euros per GiB per month, 730 hours</b>,
-    Frankfurt or the closest region each vendor operates.
+    Frankfurt or the closest region each vendor operates. Two series, read separately:
+    <b>object storage</b> priced on the data you store, <b>block storage</b> priced on the capacity you provision.
   </p>
   <div class="stamp">
-    <span>Latest reading <b>7 September 2026</b></span>
-    <span>14 vendors · 35 storage classes</span>
+    <span>Object storage <b>7 September 2026</b></span>
+    <span>Block storage <b>10 September 2026</b></span>
     <span><a href="https://github.com/retrack/eu-object-storage-benchmark">Source repository</a></span>
   </div>
 </header>
 
-<h2 class="section-title">Runs</h2>
+<h2 class="section-title">Object storage runs</h2>
 
 <a class="run" href="runs/2026-09-07/">
   <div class="run-head">
@@ -150,14 +151,38 @@ footer p{margin:0 0 8px}
   <span class="run-open">Open the reading →</span>
 </a>
 
+<h2 class="section-title">Block storage runs</h2>
+
+<a class="run" href="runs/block/2026-09-10/">
+  <div class="run-head">
+    <span class="run-date">2026-09-10</span>
+    <span class="tag">Latest</span>
+  </div>
+  <div class="run-meta">
+    <span>11 vendors · <b>37 volume classes</b></span>
+    <span>FX <b>ECB 09.09.2026</b></span>
+    <span>commit <b>d81339c</b></span>
+  </div>
+  <p class="run-note">
+    First published block storage reading — EBS-shaped volumes that attach to an instance, resize and
+    snapshot. Capacity, provisioned IOPS, provisioned throughput and snapshots are priced separately by
+    most vendors, so the ranking is the effective price of a scenario, with a toggle for capacity alone.
+    A row whose published ceiling cannot deliver the scenario is marked rather than ranked first for
+    being cheap, and a filter separates HDD, SSD and premium flash.
+  </p>
+  <span class="run-open">Open the reading →</span>
+</a>
+
 <h2 class="section-title">Trend</h2>
 
 <div class="card soft">
   <h3>Not yet — one reading is not a trend</h3>
   <p>
     A dashboard tracking how these prices move goes here once there are enough readings to draw a line
-    through. Each run's normalised storage prices are already recorded per vendor row in
+    through. Each run's normalised prices are already recorded per vendor row in
     <a href="runs.json">runs.json</a>, so the history is being accumulated from the first run onward.
+    The two series are kept apart in that file: a euro per GiB of data <i>stored</i> and a euro per GiB of
+    capacity <i>provisioned</i> are different quantities and must never share an axis.
   </p>
 </div>
 
@@ -165,7 +190,7 @@ footer p{margin:0 0 8px}
 
 <div class="card">
   <p>
-    Published object storage prices are not comparable as printed. Three things differ between vendors
+    Published storage prices are not comparable as printed. Three things differ between vendors
     and quietly move the figure by 10 % or more:
   </p>
   <ul class="plain">
@@ -174,12 +199,20 @@ footer p{margin:0 0 8px}
       never states a basis carry a △ marker and follow the page's unit selector.</li>
     <li><b>The month.</b> Hourly-billed vendors are extrapolated using 720, 730 or 744 hours depending on
       who does the extrapolating. This benchmark uses 730 throughout, and the selector lets you change it.</li>
-    <li><b>What the headline excludes.</b> Egress, requests, retrieval fees, minimum storage durations and
-      minimum billable object sizes — often where the money actually is — are shown alongside the storage rate.</li>
+    <li><b>What the headline excludes.</b> For object storage: egress, requests, retrieval fees, minimum
+      storage durations and minimum billable object sizes. For block storage: provisioned IOPS,
+      provisioned throughput and snapshots, which at the top of the range cost several times the capacity
+      itself. Both are shown alongside the storage rate.</li>
   </ul>
   <p>
     Anything a vendor does not publish is shown as <i>not published</i>, never estimated, and a scenario
     total containing one is prefixed <code>≥</code> rather than silently treated as zero.
+  </p>
+  <p>
+    The two series answer different questions and their numbers do not compare. Object storage bills the
+    bytes you actually hold; block storage bills the size of the volume, empty or full. A block volume
+    also carries a performance ceiling, so a cheap row is not a substitute for an expensive one unless it
+    can serve the workload — the block pages mark the rows that cannot.
   </p>
 </div>
 
@@ -195,7 +228,7 @@ footer p{margin:0 0 8px}
     Readings go stale silently: a run more than a month old should not be relied on.
   </p>
   <p>
-    EU Object Storage Benchmark — <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+    EU Storage Price Benchmarks — <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
     Reuse and adapt with credit; if you change the normalisation basis, say so.
   </p>
 </footer>
