@@ -6,7 +6,7 @@ Frankfurt region or the closest each vendor operates.
 
 | Benchmark | Page | Covers |
 |---|---|---|
-| **Object storage** | `eu-object-storage-benchmark.html` | S3-compatible buckets — 35 vendor × class rows, from AWS S3 Standard to Glacier Deep Archive |
+| **Object storage** | `eu-object-storage-benchmark.html` | S3-compatible buckets — 36 vendor × class rows, from AWS S3 Standard to Glacier Deep Archive |
 | **Block storage** | `eu-block-storage-benchmark.html` | EBS-shaped volumes — attachable, resizable, snapshottable — 37 vendor × class rows |
 
 Published readings: **https://retrack.github.io/eu-object-storage-benchmark/**
