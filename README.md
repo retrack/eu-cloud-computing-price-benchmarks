@@ -8,7 +8,7 @@ comparison as a single dependency-free HTML page with an adjustable total-cost s
 
 | Benchmark | Covers | Rows | Observed |
 |---|---|---|---|
-| [**Object storage**](object-storage/) | S3-compatible buckets, from AWS S3 Standard to Glacier Deep Archive | 35 vendor × class | 2026-09-07 |
+| [**Object storage**](object-storage/) | S3-compatible buckets, from AWS S3 Standard to Glacier Deep Archive | 36 vendor × class | 2026-09-07 |
 | [**Block storage**](block-storage/) | EBS-shaped volumes — attachable, resizable, snapshottable | 37 vendor × class | 2026-09-10 |
 
 Published readings: **https://retrack.github.io/eu-cloud-computing-price-benchmarks/**
