@@ -1,7 +1,7 @@
 // Object storage price dataset — observed 2026-09-07 from official vendor pages.
 // Storage rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
-const FX = { EUR: 1, USD: 0.860437, CHF: 1.063264 }; // EUR per 1 unit — ECB 2026-09-04 (frankfurter.dev)
-const FX_NOTE = "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF";
+const FX = { EUR: 1, USD: 0.858222, CHF: 1.063377 }; // EUR per 1 unit — ECB 2026-09-09 (frankfurter.dev)
+const FX_NOTE = "ECB 09.09.2026: 1 EUR = 1.1652 USD = 0.9404 CHF";
 const GIB = 1.073741824; // billable decimal GB per physical GiB
 
 const T = (upTo, r) => ({ upTo, r }); // upTo = cumulative GiB threshold

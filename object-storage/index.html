@@ -1,4 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EU Object Storage Benchmark</title>
+<meta name="description" content="S3-compatible object storage list prices across 14 vendors in Europe, normalised to euros per GiB per month on a 730-hour basis.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -173,6 +179,8 @@ tr.is-exo td.key{color:var(--exo)}
 }
 </style>
 
+</head>
+<body>
 <div class="wrap">
 <header class="masthead">
   <p class="eyebrow">Exoscale SOS · competitive pricing</p>
@@ -304,12 +312,160 @@ tr.is-exo td.key{color:var(--exo)}
   </ul>
 </div>
 </div>
-
 <script>
+/* Shared machinery for every benchmark page.
+ *
+ * The build concatenates this file, then <product>/data.js, then <product>/page.js, into one
+ * <script>. Functions here read `S` (the page state), `GIB` and `FX`, all declared by those
+ * later files — that is safe because nothing here runs at load time. The wiring helpers at the
+ * bottom are called by each page.js once its own state and render() exist.
+ */
+
+/* ---------------- units and money ---------------- */
+
+/* Billable units per physical unit. "GiB" binary confirmed, "GB" decimal confirmed,
+   anything else the vendor never stated — those follow the page's selector. */
+function uf(unit){
+  if(unit === "GiB") return 1;
+  if(unit === "GB")  return GIB;
+  return S.unitMode === "decimal" ? GIB : 1;
+}
+
+/* Months' worth of a rate quoted per hour, per 30-day month, or per month. */
+function hf(bill){
+  if(bill === "h")   return S.hours;
+  if(bill === "d30") return S.hours / 720;
+  return 1;
+}
+
+/* Cost of `qty` against a cumulative tier ladder, charged tier by tier. */
+function tierCost(qty, tiers){
+  let cost = 0, prev = 0;
+  for(const t of tiers){
+    const upTo = Math.min(t.upTo, qty);
+    if(upTo > prev){ cost += (upTo - prev) * t.r; prev = upTo; }
+    if(prev >= qty) break;
+  }
+  return cost;
+}
+
+/* ---------------- formatting ---------------- */
+const fmtU = v => v === null ? "—" : (v < 0.01 ? v.toFixed(5) : v.toFixed(4));
+const fmtE = v => Math.round(v).toLocaleString("en-GB");
+const num  = n => n.toLocaleString("en-GB");
+const sym  = c => c === "EUR" ? "€" : c === "USD" ? "$" : "CHF";
+const esc  = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---------------- ranking chart ---------------- */
+
+/* items: [{ vendor, cls, value, exo, short }] — already filtered and sorted ascending.
+   `short` hatches the bar: the row cannot deliver what the scenario asked for. */
+function renderRanking(elId, items){
+  const el = document.getElementById(elId);
+  if(!items.length){ el.innerHTML = ""; return; }
+  const max = Math.max(...items.map(i => i.value));
+  el.innerHTML = items.map(i => {
+    const exo = i.exo ? " is-exo" : "";
+    const w = Math.max(1.5, i.value / max * 100);
+    return '<div class="rk-name' + exo + '">' + esc(i.vendor) + " · " + esc(i.cls) + "</div>"
+      + '<div class="rk-track"><div class="rk-bar' + exo + (i.short ? " is-short" : "")
+      + '" style="width:' + w.toFixed(2) + '%"></div></div>'
+      + '<div class="rk-val' + exo + '">' + fmtU(i.value) + " €</div>";
+  }).join("");
+}
+
+/* ---------------- sorting ---------------- */
+
+/* Rows a vendor does not price sort last in both directions; ties fall back to the name,
+   so the order is stable whichever column is chosen. */
+function sortRows(rows, sortVal, SORT){
+  if(!SORT.col) return rows;
+  const get = sortVal[SORT.col];
+  if(!get) return rows;
+  return rows.slice().sort((a, b) => {
+    const x = get(a), y = get(b);
+    if(typeof x === "string") return SORT.dir * x.localeCompare(y);
+    const xa = x === null || x === undefined ? Infinity : x;
+    const ya = y === null || y === undefined ? Infinity : y;
+    if(xa === ya) return (a.vendor + a.cls).localeCompare(b.vendor + b.cls);
+    return SORT.dir * (xa - ya);
+  });
+}
+
+function applyAriaSort(SORT){
+  [...document.querySelectorAll("th.sortable")].forEach(th => {
+    th.setAttribute("aria-sort",
+      th.dataset.sort === SORT.col ? (SORT.dir === 1 ? "ascending" : "descending") : "none");
+  });
+}
+
+/* ---------------- wiring ---------------- */
+
+function stampFx(){
+  document.getElementById("stamp-fx").textContent = FX_NOTE.replace(/^ECB [\d.]+: /, "");
+}
+
+function wireTabs(render){
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = Object.entries(PANELS).map(([k, p], i) =>
+    '<button class="tab" role="tab" data-k="' + k + '" aria-selected="' + (i === 0) + '">'
+    + esc(p.label) + "</button>").join("");
+  tabsEl.addEventListener("click", e => {
+    const b = e.target.closest(".tab"); if(!b) return;
+    S.panel = b.dataset.k;
+    [...tabsEl.children].forEach(t => t.setAttribute("aria-selected", t === b));
+    render();
+  });
+}
+
+/* Click a header to sort ascending, again to reverse, a third time to restore panel order. */
+function wireSort(SORT, render){
+  const head = document.getElementById("thead-row");
+  [...document.querySelectorAll("th.sortable")].forEach(th => { th.tabIndex = 0; });
+  head.addEventListener("keydown", e => {
+    if(e.key !== "Enter" && e.key !== " ") return;
+    const th = e.target.closest("th.sortable"); if(!th) return;
+    e.preventDefault(); th.click();
+  });
+  head.addEventListener("click", e => {
+    const th = e.target.closest("th.sortable"); if(!th) return;
+    const col = th.dataset.sort;
+    if(SORT.col === col && SORT.dir === 1)        SORT.dir = -1;
+    else if(SORT.col === col && SORT.dir === -1){ SORT.col = null; SORT.dir = 1; }
+    else                                        { SORT.col = col; SORT.dir = 1; }
+    render();
+  });
+  document.getElementById("unsort").addEventListener("click", () => {
+    SORT.col = null; SORT.dir = 1; render();
+  });
+}
+
+/* bindings: { inputId: [stateKey, isNumber] } */
+function bindControls(bindings, render){
+  for(const [id, [key, isNum]] of Object.entries(bindings)){
+    const el = document.getElementById(id);
+    el.addEventListener("input", () => {
+      S[key] = isNum ? (parseFloat(el.value) || 0) : el.value;
+      render();
+    });
+  }
+}
+
+/* defaults: { inputId: value } for the form; state: the matching slice of S.
+   `extra` restores anything that is not a plain input (segmented buttons, filters). */
+function wireReset(defaults, state, render, extra){
+  document.getElementById("reset").addEventListener("click", () => {
+    for(const [id, v] of Object.entries(defaults)) document.getElementById(id).value = v;
+    Object.assign(S, JSON.parse(JSON.stringify(state)));
+    if(extra) extra();
+    render();
+  });
+}
+
 // Object storage price dataset — observed 2026-09-07 from official vendor pages.
 // Storage rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
-const FX = { EUR: 1, USD: 0.860437, CHF: 1.063264 }; // EUR per 1 unit — ECB 2026-09-04 (frankfurter.dev)
-const FX_NOTE = "ECB 04.09.2026: 1 EUR = 1.1622 USD = 0.9405 CHF";
+const FX = { EUR: 1, USD: 0.858222, CHF: 1.063377 }; // EUR per 1 unit — ECB 2026-09-09 (frankfurter.dev)
+const FX_NOTE = "ECB 09.09.2026: 1 EUR = 1.1652 USD = 0.9404 CHF";
 const GIB = 1.073741824; // billable decimal GB per physical GiB
 
 const T = (upTo, r) => ({ upTo, r }); // upTo = cumulative GiB threshold
@@ -550,25 +706,10 @@ const PANELS = {
     ids:["exo-cold","exo-warm","exo-std","ovh-mz-std","ovh-1z-std","ovh-ia","ovh-aa","ovh-ca","scw-mz","scw-1z","scw-gl","ionos","r2-std","r2-ia","hetzner","infomaniak","stackit","tcloud"] }
 };
 
-
 /* ---------------- calculation engine ---------------- */
 const S = { stored:100, egress:10, put:2, get:20, hours:730, unitMode:"decimal", panel:"actuel" };
 const TIB = 1024; // GiB per TiB
 
-function uf(unit){
-  if(unit === "GiB") return 1;
-  if(unit === "GB")  return GIB;
-  return S.unitMode === "decimal" ? GIB : 1;      // unit not stated by the vendor
-}
-function tierCost(qtyGiB, tiers){
-  let cost = 0, prev = 0;
-  for(const t of tiers){
-    const upTo = Math.min(t.upTo, qtyGiB);
-    if(upTo > prev){ cost += (upTo - prev) * t.r; prev = upTo; }
-    if(prev >= qtyGiB) break;
-  }
-  return cost;
-}
 function storageCost(r, storedGiB){
   if(!r.tiers) return null;
   const h = r.bill === "h" ? S.hours : 1;
@@ -618,9 +759,6 @@ function scenario(r){
 }
 
 /* ---------------- formatting ---------------- */
-const fmtU = v => v === null ? "—" : (v < 0.01 ? v.toFixed(5) : v.toFixed(4));
-const fmtE = v => Math.round(v).toLocaleString("en-GB");
-const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const UNKNOWN_UNIT = u => u === "GB?";
 
 function publishedRate(r){
@@ -628,7 +766,7 @@ function publishedRate(r){
   const u = r.unit === "GiB" ? "GiB" : "GB";
   return r.base
     ? "€" + r.base.fee.toFixed(2) + "/mo + €" + r.tiers[0].r.toFixed(7) + "/" + u + "·h"
-    : r.tiers[0].r + " " + (r.cur === "EUR" ? "€" : r.cur === "USD" ? "$" : "CHF") + "/" + u + (r.bill === "h" ? "·h" : "-month");
+    : r.tiers[0].r + " " + sym(r.cur) + "/" + u + (r.bill === "h" ? "·h" : "-month");
 }
 function egressCell(r){
   if(!r.egress.tiers) return '<span class="np">not published</span>';
@@ -646,15 +784,9 @@ function render(){
   document.getElementById("stamp-hours").textContent = S.hours + " h/month";
 
   // ranking
-  const priced = rows.filter(r => r.tiers).map(r => ({ r, v: unitPrice(r) })).sort((a, b) => a.v - b.v);
-  const max = Math.max(...priced.map(p => p.v));
-  document.getElementById("rank").innerHTML = priced.map(({ r, v }) => {
-    const exo = r.brand ? " is-exo" : "";
-    const w = Math.max(1.5, v / max * 100);
-    return '<div class="rk-name' + exo + '">' + esc(r.vendor) + " · " + esc(r.cls) + '</div>'
-      + '<div class="rk-track"><div class="rk-bar' + exo + '" style="width:' + w.toFixed(2) + '%"></div></div>'
-      + '<div class="rk-val' + exo + '">' + fmtU(v) + " €</div>";
-  }).join("");
+  renderRanking("rank", rows.filter(r => r.tiers)
+    .map(r => ({ vendor:r.vendor, cls:r.cls, value:unitPrice(r), exo:r.brand }))
+    .sort((a, b) => a.value - b.value));
 
   // sorting
   const sortVal = {
@@ -667,21 +799,8 @@ function render(){
     mindays: r => r.minDays,
     cost:    r => { const sc = scenario(r); return sc.hasPrice ? sc.total : null; }
   };
-  if(SORT.col){
-    const get = sortVal[SORT.col];
-    rows = rows.slice().sort((a, b) => {
-      const x = get(a), y = get(b);
-      if(typeof x === "string") return SORT.dir * x.localeCompare(y);
-      const xa = x === null || x === undefined ? Infinity : x;   // unpriced rows always last
-      const ya = y === null || y === undefined ? Infinity : y;
-      if(xa === ya) return (a.vendor + a.cls).localeCompare(b.vendor + b.cls);
-      return SORT.dir * (xa - ya);
-    });
-  }
-  [...document.querySelectorAll("th.sortable")].forEach(th => {
-    th.setAttribute("aria-sort",
-      th.dataset.sort === SORT.col ? (SORT.dir === 1 ? "ascending" : "descending") : "none");
-  });
+  rows = sortRows(rows, sortVal, SORT);
+  applyAriaSort(SORT);
 
   // table
   document.getElementById("tbody").innerHTML = rows.map(r => {
@@ -716,48 +835,20 @@ function render(){
 }
 
 /* ---------------- interface ---------------- */
-document.getElementById("stamp-fx").textContent = FX_NOTE.replace("ECB 04.09.2026: ", "");
-const tabsEl = document.getElementById("tabs");
-tabsEl.innerHTML = Object.entries(PANELS).map(([k, p], i) =>
-  '<button class="tab" role="tab" data-k="' + k + '" aria-selected="' + (i === 0) + '">' + esc(p.label) + "</button>").join("");
-tabsEl.addEventListener("click", e => {
-  const b = e.target.closest(".tab"); if(!b) return;
-  S.panel = b.dataset.k;
-  [...tabsEl.children].forEach(t => t.setAttribute("aria-selected", t === b));
-  render();
-});
-[...document.querySelectorAll("th.sortable")].forEach(th => { th.tabIndex = 0; });
-document.getElementById("thead-row").addEventListener("keydown", e => {
-  if(e.key !== "Enter" && e.key !== " ") return;
-  const th = e.target.closest("th.sortable"); if(!th) return;
-  e.preventDefault(); th.click();
-});
-document.getElementById("thead-row").addEventListener("click", e => {
-  const th = e.target.closest("th.sortable"); if(!th) return;
-  const col = th.dataset.sort;
-  if(SORT.col === col && SORT.dir === 1)      SORT.dir = -1;
-  else if(SORT.col === col && SORT.dir === -1){ SORT.col = null; SORT.dir = 1; }
-  else                                        { SORT.col = col; SORT.dir = 1; }
-  render();
-});
-document.getElementById("unsort").addEventListener("click", () => {
-  SORT.col = null; SORT.dir = 1; render();
-});
-const bind = (id, key, num) => {
-  const el = document.getElementById(id);
-  el.addEventListener("input", () => {
-    S[key] = num ? (parseFloat(el.value) || 0) : el.value;
-    render();
-  });
-};
-bind("in-stored", "stored", true); bind("in-egress", "egress", true);
-bind("in-put", "put", true); bind("in-get", "get", true);
-bind("in-hours", "hours", true); bind("in-unit", "unitMode", false);
-document.getElementById("reset").addEventListener("click", () => {
-  const d = { "in-stored":100, "in-egress":10, "in-put":2, "in-get":20, "in-hours":730, "in-unit":"decimal" };
-  for(const [id, v] of Object.entries(d)) document.getElementById(id).value = v;
-  Object.assign(S, { stored:100, egress:10, put:2, get:20, hours:730, unitMode:"decimal" });
-  render();
-});
+const DEFAULTS = { "in-stored":100, "in-egress":10, "in-put":2, "in-get":20,
+                   "in-hours":730, "in-unit":"decimal" };
+const RESET_STATE = { stored:100, egress:10, put:2, get:20, hours:730, unitMode:"decimal" };
+
+stampFx();
+wireTabs(render);
+wireSort(SORT, render);
+bindControls({
+  "in-stored": ["stored", true], "in-egress": ["egress", true],
+  "in-put":    ["put",    true], "in-get":    ["get",    true],
+  "in-hours":  ["hours",  true], "in-unit":   ["unitMode", false]
+}, render);
+wireReset(DEFAULTS, RESET_STATE, render);
 render();
 </script>
+</body>
+</html>

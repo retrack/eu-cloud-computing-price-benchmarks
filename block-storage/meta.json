@@ -1,0 +1,5 @@
+{
+  "title": "EU Block Storage Benchmark",
+  "description": "Block storage list prices in Europe — capacity, provisioned IOPS, throughput and snapshots — normalised to euros per provisioned GiB per month.",
+  "observed": "2026-09-10"
+}

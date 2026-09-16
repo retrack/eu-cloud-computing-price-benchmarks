@@ -1,38 +1,82 @@
 #!/usr/bin/env python3
-"""Assemble each dataset + its template into a self-contained page.
+"""Compose each benchmark page from the shared shell and its own parts.
 
-  python3 tools/build.py              build every page
-  python3 tools/build.py object       build only the object storage page
-  python3 tools/build.py block        build only the block storage page
+A benchmark is any top-level directory holding `meta.json`, `data.js`, `page.html` and
+`page.js`. The build fills `shared/shell.html` and writes `index.html` beside them:
+
+    shared/shell.html   document skeleton
+    shared/base.css     tokens, layout, controls, tabs, ranking, table  (every page)
+    <dir>/style.css     product-specific CSS                            (optional)
+    <dir>/page.html     the body markup
+    shared/ui.js        units, formatting, ranking, sorting, wiring     (every page)
+    <dir>/data.js       the dataset
+    <dir>/page.js       the cost model, the renderers, the wiring calls
+
+Script order matters: ui.js first, then data.js, then page.js. Helpers in ui.js read `S`,
+`GIB` and `FX` from the later files, which is fine because none of it runs at load time.
+
+Usage
+  python3 tools/build.py                    build every benchmark
+  python3 tools/build.py object-storage      build one, by directory name
 """
+import json
 import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-
-PAGES = {
-    "object": ("data.js", "page.template.html", "eu-object-storage-benchmark.html"),
-    "block": ("block-data.js", "block-page.template.html", "eu-block-storage-benchmark.html"),
-}
+SHARED = ROOT / "shared"
+PARTS = ("meta.json", "data.js", "page.html", "page.js")
 
 
-def build(name):
-    data_name, tpl_name, out_name = PAGES[name]
-    tpl = (ROOT / tpl_name).read_text(encoding="utf-8")
-    data = (ROOT / data_name).read_text(encoding="utf-8")
-    if "/*__DATA__*/" not in tpl:
-        sys.exit(f"{tpl_name} has no /*__DATA__*/ marker")
-    out = ROOT / out_name
-    out.write_text(tpl.replace("/*__DATA__*/", data), encoding="utf-8")
-    print(f"{out} — {out.stat().st_size} octets")
+def benchmarks():
+    for d in sorted(p for p in ROOT.iterdir() if p.is_dir() and not p.name.startswith(".")):
+        if all((d / f).is_file() for f in PARTS):
+            yield d
+
+
+def build(d: pathlib.Path) -> pathlib.Path:
+    meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+    for key in ("title", "description"):
+        if not meta.get(key):
+            sys.exit(f"{d.name}/meta.json is missing '{key}'")
+
+    style = d / "style.css"
+    page_css = f"<style>\n{style.read_text(encoding='utf-8').strip()}\n</style>" if style.is_file() else ""
+
+    html = (SHARED / "shell.html").read_text(encoding="utf-8")
+    for token, value in {
+        "{{TITLE}}": meta["title"],
+        "{{DESCRIPTION}}": meta["description"].replace('"', "&quot;"),
+        "{{BASE_CSS}}": (SHARED / "base.css").read_text(encoding="utf-8").strip(),
+        "{{PAGE_CSS}}": page_css,
+        "{{BODY}}": (d / "page.html").read_text(encoding="utf-8").strip(),
+        "{{UI_JS}}": (SHARED / "ui.js").read_text(encoding="utf-8").strip(),
+        "{{DATA_JS}}": (d / "data.js").read_text(encoding="utf-8").strip(),
+        "{{PAGE_JS}}": (d / "page.js").read_text(encoding="utf-8").strip(),
+    }.items():
+        if token not in html:
+            sys.exit(f"shared/shell.html has no {token} placeholder")
+        html = html.replace(token, value)
+
+    out = d / "index.html"
+    out.write_text(html, encoding="utf-8")
+    return out
 
 
 def main():
-    wanted = sys.argv[1:] or list(PAGES)
-    for name in wanted:
-        if name not in PAGES:
-            sys.exit(f"unknown page {name!r} — pick from {', '.join(PAGES)}")
-        build(name)
+    wanted = [a for a in sys.argv[1:] if not a.startswith("-")]
+    found = list(benchmarks())
+    if wanted:
+        names = {d.name for d in found}
+        missing = [w for w in wanted if w not in names]
+        if missing:
+            sys.exit(f"no benchmark named {', '.join(missing)} (have: {', '.join(sorted(names))})")
+        found = [d for d in found if d.name in wanted]
+    if not found:
+        sys.exit(f"no benchmark directories found (each needs {', '.join(PARTS)})")
+    for d in found:
+        out = build(d)
+        print(f"{out.relative_to(ROOT)} — {out.stat().st_size} bytes")
 
 
 if __name__ == "__main__":

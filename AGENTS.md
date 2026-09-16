@@ -1,58 +1,54 @@
-# EU storage price benchmarks — working notes
+# EU Cloud Computing Price Benchmarks — maintenance guide
 
-## Deliverables
+## Shape of the repository
 
-Two self-contained HTML pages. Open either directly; there is no runtime dependency beyond a
-web font.
+A benchmark is a top-level directory holding `meta.json`, `data.js`, `page.html` and
+`page.js`. `tools/build.py` finds them by that signature and composes them with `shared/`
+into `index.html` — there is no registry to update.
 
-- **`eu-object-storage-benchmark.html`** — S3-compatible object storage.
-- **`eu-block-storage-benchmark.html`** — EBS-shaped block storage: volumes that attach to an
-  instance, resize, and snapshot.
-
-They are deliberately **separate pages**, not two tabs of one page. The two products are
+Everything generic lives in `shared/`; everything product-specific lives in the benchmark's
+folder. The pages are deliberately **separate pages, not tabs of one**: the products are
 bought by different people for different reasons, the cost drivers do not overlap (egress and
 requests versus provisioned IOPS and throughput), and merging the scenarios would produce a
-control panel nobody could read. They share the CSS, the tab/sort/ranking machinery and the
-build tooling; they do not share a dataset or a calculation engine.
-
-Each page has three tabbed panels — **Core set**, **Hyperscalers**, **European providers** —
-with a ranked bar chart and a sortable detail table that recalculates from the controls at
-the top.
-
-`README.md` is the public repository README. Internal commentary — what the benchmarks change
-for our own slide, how to use them in a customer conversation — lives in `NOTES-internal.md`,
-which is gitignored and never leaves the folder.
-
-## Files
+control panel nobody could read. They share the look, the machinery and the tooling; they do
+not share a dataset or a cost model.
 
 | Path | Role |
 |---|---|
-| `data.js` | object storage dataset — one row = one vendor × one storage class |
-| `block-data.js` | block storage dataset — one row = one vendor × one volume class |
-| `page.template.html` | object storage HTML/CSS/JS shell, contains the `/*__DATA__*/` marker |
-| `block-page.template.html` | block storage shell, same marker |
-| `tools/build.py` | assembles each dataset + template → its page |
-| `tools/update_fx.py` | refreshes the EUR/USD and EUR/CHF rates inside both datasets |
-| `README.md` | public repository README |
+| `shared/shell.html` | document skeleton with `{{TITLE}}`, `{{BASE_CSS}}`, `{{BODY}}`, `{{UI_JS}}` … placeholders |
+| `shared/base.css` | tokens, layout, controls, tabs, ranking chart, table — used by every page |
+| `shared/ui.js` | `uf`/`hf`/`tierCost`, formatting, `renderRanking`, `sortRows`, `wireTabs`/`wireSort`/`bindControls`/`wireReset` |
+| `<benchmark>/meta.json` | `title`, `description`, `observed` |
+| `<benchmark>/data.js` | the dataset — one entry per vendor × class, plus `FX`, `FX_NOTE`, `PANELS` |
+| `<benchmark>/page.html` | the body markup: header, controls, table head, notes, sources |
+| `<benchmark>/page.js` | the cost model, the renderers, the wiring calls |
+| `<benchmark>/style.css` | product-specific CSS (optional; only block storage has one) |
+| `<benchmark>/index.html` | generated; committed so a clone opens without a build |
+| `<benchmark>/README.md` | what it covers, its conventions, its known gaps |
+| `README.md` | public repository README and benchmark index |
 | `LICENSE` | CC BY 4.0 |
 | `NOTES-internal.md` | internal commentary — gitignored, stays local |
-| `archive/` | superseded versions, including the original French edition |
-
-## Build
 
 ```bash
-python3 tools/build.py            # both pages
-python3 tools/build.py block      # or object — just that one
+python3 tools/build.py                 # every benchmark
+python3 tools/build.py block-storage   # just one
 ```
 
-The datasets and templates are the sources; the HTML is generated and committed so the pages
-can be opened straight from a clone.
+**Script order matters.** The build concatenates `shared/ui.js`, then `<benchmark>/data.js`,
+then `<benchmark>/page.js` into one `<script>`. Helpers in `ui.js` read `S`, `GIB`, `FX`,
+`FX_NOTE` and `PANELS`, which the later files declare — safe because nothing in `ui.js` runs
+at load time. Each `page.js` therefore ends by calling `stampFx()`, `wireTabs(render)`,
+`wireSort(SORT, render)`, `bindControls({...}, render)`, `wireReset(...)` and then `render()`.
+
+Anything shared between the two pages belongs in `shared/`, not copied into both. If a change
+to `ui.js` or `base.css` is only wanted on one page, that is a sign it belongs in the
+benchmark's own `page.js` or `style.css` instead.
 
 ---
 
 ## Refreshing the FX rates
 
-Rates live in two lines at the top of each dataset:
+Two lines at the top of each `<benchmark>/data.js`:
 
 ```js
 const FX = { EUR: 1, USD: 0.858222, CHF: 1.063377 }; // EUR per 1 unit
@@ -61,17 +57,20 @@ const FX_NOTE = "ECB 09.09.2026: 1 EUR = 1.1652 USD = 0.9404 CHF";
 
 `FX` holds **EUR per one unit of foreign currency** — the inverse of the way the ECB quotes
 them. `FX_NOTE` is the human-readable stamp shown in the page header. Keep them consistent:
-`FX.USD` must equal `1 / (USD per EUR)`.
+`FX.USD` must equal `1 / (USD per EUR)`. The script handles the inversion; never edit the line
+by hand and invert it yourself.
 
 ```bash
-python3 tools/update_fx.py                 # fetch the latest ECB rates, rewrite both datasets
-python3 tools/update_fx.py --dry-run       # print what it would write, change nothing
-python3 tools/update_fx.py --only block-data.js
-python3 tools/build.py
+python3 tools/update_fx.py                        # fetch the latest ECB rates, every dataset
+python3 tools/update_fx.py --dry-run              # print what it would write, change nothing
+python3 tools/update_fx.py --only block-storage   # one benchmark
+python3 tools/build.py                            # regenerate the pages
 ```
 
-FX is independent of the prices, so refreshing it without re-reading the prices is legitimate
-— but do both datasets together, or the two pages will quote different rates on the same day.
+A dataset carries the FX rate that was current when its prices were read. Refreshing FX
+without re-reading the prices is legitimate — the rates are independent — but do it for every
+dataset at once, or two pages will quote different rates on the same day. A dataset already
+carrying the requested rates is reported and skipped, not treated as an error.
 
 If the fetch fails (a filtered network, a proxy 403), read the rates off
 https://www.ecb.europa.eu/stats/eurofxref/ (or
@@ -114,7 +113,7 @@ The feeds that worked on 10 September 2026:
 Anything you cannot confirm is `null` or `"not published"` — never an estimate. The pages
 render those as `not published` and mark the scenario cost with `≥`.
 
-### 2a. Update `data.js` (object storage)
+### 2a. Update `object-storage/data.js`
 
 One object per vendor × class. Shape:
 
@@ -139,7 +138,7 @@ Conventions that must hold:
   in the vendor's own unit.
 - `tiers:null` means no public storage price — the row still shows its other fields.
 
-### 2b. Update `block-data.js` (block storage)
+### 2b. Update `block-storage/data.js`
 
 Block storage prices split into as many as four line items, so the row shape is wider.
 
@@ -193,8 +192,10 @@ will not appear anywhere.
 
 ### 3. Update the reading date
 
-Three places per page carry it: the `// observed` comment at the top of the dataset, the
-`Observed` stamp in the page header, and the sources heading — both in the template.
+Four places per page carry it: the `// observed` comment at the top of `data.js`, the
+`observed` field in `meta.json`, the `Observed` stamp in the page header and the sources
+heading (both in `page.html`). The benchmark's `README.md` and the index table in the root
+`README.md` state it too.
 
 ### 4. Verify before publishing
 
@@ -205,15 +206,42 @@ Three places per page carry it: the `// observed` comment at the top of the data
 - Sanity-check the scenario totals on a row you know well.
 - On the block page, set the IOPS control above and below a vendor's published ceiling and
   confirm the ⚠ marker appears and disappears.
-- Update the "Known gaps" tables in `README.md` if a vendor's status changed — a rate that
-  became public, a contradiction that got resolved, a region that moved.
+- Update the "Known gaps" table in that benchmark's `README.md` if a vendor's status changed
+  — a rate that became public, a contradiction that got resolved, a region that moved.
+
+---
+
+
+---
+
+## Adding a new benchmark
+
+1. `mkdir <name>` at the repository root — name it for the thing being priced: `compute`,
+   `egress`, `managed-kubernetes`.
+2. Write `<name>/meta.json` with `title`, `description` and `observed`.
+3. Copy the nearest existing `page.html` and `page.js` as a starting point and adapt the
+   controls, the columns and the cost model. Keep the shared machinery — the tab, sort,
+   ranking and reset wiring should come from `shared/ui.js`, not be re-implemented.
+4. Write `<name>/data.js` following the collection procedure above, with its own `FX`,
+   `FX_NOTE` and `PANELS`. Copy the FX lines from an existing dataset so every page agrees.
+5. Add `<name>/style.css` only for CSS that genuinely belongs to that product; anything the
+   other pages would also want goes in `shared/base.css`.
+6. `python3 tools/build.py <name>`.
+7. Write `<name>/README.md` — what it covers, its conventions, its known gaps — and add a row
+   to the benchmark index table in the root `README.md`.
+8. Give it its own `runs/<name>/` series on `gh-pages` when you publish it.
+
+Whatever is being priced, the house rules in the root `README.md` apply: one stated basis,
+physical units rather than billing units, tiers applied tier by tier, nothing estimated,
+regions labelled, assumptions adjustable on the page, and capability gaps marked rather than
+rewarded.
 
 ---
 
 ## Publishing
 
 The site lives on the `gh-pages` branch, served at
-https://retrack.github.io/eu-object-storage-benchmark/ — an `index.html` listing the runs,
+https://retrack.github.io/eu-cloud-computing-price-benchmarks/ — an `index.html` listing the runs,
 one `runs/<YYYY-MM-DD>/index.html` per published reading, and `runs.json` holding every row's
 normalised storage price so a trend dashboard has a history to draw from. That branch carries
 no source; its own `README.md` documents the step-by-step publish procedure, including the
@@ -221,13 +249,20 @@ one-liner that regenerates the `prices` block so every run is computed the same 
 
 ```bash
 git worktree add ../ghp gh-pages
-cp eu-object-storage-benchmark.html ../ghp/runs/$(date +%F)/index.html
+mkdir -p ../ghp/runs/$(date +%F)
+cp object-storage/index.html ../ghp/runs/$(date +%F)/index.html
+mkdir -p ../ghp/runs/block/$(date +%F)
+cp block-storage/index.html ../ghp/runs/block/$(date +%F)/index.html
 ```
 
-The block storage page is a second series and needs its own path on that branch —
-`runs/block/<YYYY-MM-DD>/index.html` — and its own entry in `runs.json`, keyed so a trend
-dashboard does not mix provisioned-GiB prices with stored-GiB prices. They are not
-comparable numbers and must never share an axis.
+Each benchmark is its own series on that branch — object storage at
+`runs/<YYYY-MM-DD>/index.html`, block storage at `runs/block/<YYYY-MM-DD>/index.html` — with
+its own entry in `runs.json`, keyed so a trend dashboard does not mix provisioned-GiB prices
+with stored-GiB prices. They are not comparable numbers and must never share an axis. A
+benchmark added later gets its own `runs/<name>/` prefix on the same pattern.
+
+The repository was renamed from `eu-object-storage-benchmark`; GitHub redirects both the old
+repository URL and the old Pages URL, but new links should use the current name.
 
 Publish a run only after the verification step above — the site is the public face of the
 reading, and a run cannot be silently corrected once someone has cited its date.
@@ -236,7 +271,7 @@ reading, and a run cannot be silently corrected once someone has cited its date.
 
 ## Normalisation conventions
 
-Shared by both pages:
+Shared by every page:
 
 - Basis **730 h/month** (annual average), prices in **€/GiB-month**, excluding VAT.
 - Vendors that price in decimal GB are multiplied by 1.073741824 so the comparison is per

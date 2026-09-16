@@ -1,0 +1,5 @@
+{
+  "title": "EU Object Storage Benchmark",
+  "description": "S3-compatible object storage list prices across 14 vendors in Europe, normalised to euros per GiB per month on a 730-hour basis.",
+  "observed": "2026-09-07"
+}

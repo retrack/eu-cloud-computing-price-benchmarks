@@ -1,0 +1,169 @@
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Exoscale Block Storage · competitive pricing</p>
+  <h1>Block storage in Europe:<br>what a provisioned gigabyte actually costs</h1>
+  <p class="standfirst">Attachable, resizable, snapshottable volumes — the EBS-shaped product, not object storage. Every rate was read on 10 September 2026 from the vendors' own pricing pages and price feeds, then normalised to <strong>euros per provisioned GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. Capacity, IOPS, throughput and snapshots are priced separately by most vendors; the scenario at the top adds them up for your own volumes.</p>
+  <div class="stamp">
+    <span>Observed <b>2026-09-10</b></span>
+    <span>Basis <b id="stamp-hours">730 h/month</b></span>
+    <span>Unit <b>GiB (2³⁰ bytes)</b></span>
+    <span>FX <b id="stamp-fx"></b></span>
+    <span>Prices <b>excl. VAT</b></span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-grid">
+    <div class="field"><label for="in-gib">Provisioned (GiB)</label><input id="in-gib" type="number" min="1" step="128" value="2048"></div>
+    <div class="field"><label for="in-vols">Volumes</label><input id="in-vols" type="number" min="1" step="1" value="4"></div>
+    <div class="field"><label for="in-iops">IOPS per volume</label><input id="in-iops" type="number" min="0" step="500" value="3000"></div>
+    <div class="field"><label for="in-mbs">MB/s per volume</label><input id="in-mbs" type="number" min="0" step="25" value="125"></div>
+    <div class="field"><label for="in-snap">Snapshot data (GiB)</label><input id="in-snap" type="number" min="0" step="128" value="1024"></div>
+    <div class="field"><label for="in-hours">Hours per month</label>
+      <select id="in-hours">
+        <option value="720">720 h — 30-day month</option>
+        <option value="730" selected>730 h — annual average</option>
+        <option value="744">744 h — 31-day month</option>
+      </select></div>
+    <div class="field"><label for="in-unit">“GB” left undefined by the vendor</label>
+      <select id="in-unit">
+        <option value="decimal" selected>treat as decimal GB (10⁹)</option>
+        <option value="binary">treat as GiB (2³⁰)</option>
+      </select></div>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="panel-sub" id="panel-sub"></p>
+
+<div class="toolbar">
+  <span class="tb-label">Storage medium</span>
+  <div class="seg" id="media" role="group" aria-label="Filter by storage medium">
+    <button type="button" data-m="hdd" aria-pressed="true"><span class="dot"></span>HDD &amp; magnetic</button>
+    <button type="button" data-m="ssd" aria-pressed="true"><span class="dot"></span>SSD</button>
+    <button type="button" data-m="premium" aria-pressed="true"><span class="dot"></span>Premium SSD</button>
+    <button type="button" data-m="unk" aria-pressed="true"><span class="dot"></span>Not stated</button>
+  </div>
+</div>
+
+<div class="chart-head">
+  <h2 class="section-title" id="rank-title">Effective price of the scenario — € per provisioned GiB per month</h2>
+  <div class="seg" id="metric" role="group" aria-label="Chart metric">
+    <button type="button" data-x="eff" aria-pressed="true">Effective</button>
+    <button type="button" data-x="cap" aria-pressed="false">Capacity only</button>
+  </div>
+</div>
+<div class="rank" id="rank"></div>
+<p class="legend" id="legend"></p>
+<p class="empty" id="empty" hidden>No row in this panel uses the selected media.</p>
+
+<h2 class="section-title">Rate detail and scenario cost</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr id="thead-row">
+      <th class="sortable" data-sort="vendor">Vendor</th>
+      <th class="sortable" data-sort="cls">Class · region</th>
+      <th>Published rate</th>
+      <th class="num sortable" data-sort="capunit">Capacity<br>€/GiB-month</th>
+      <th class="num sortable" data-sort="effunit">Effective<br>€/GiB-month</th>
+      <th>Performance included</th>
+      <th class="num sortable" data-sort="iops">IOPS<br>charge</th>
+      <th class="num sortable" data-sort="tput">MB/s<br>charge</th>
+      <th class="num sortable" data-sort="snap">Snapshot<br>€/GiB-month</th>
+      <th>Redundancy</th>
+      <th class="num sortable" data-sort="cost">Scenario cost<br>€/month</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p class="sorthint">Click a column header to sort; click again to reverse.
+  <button type="button" id="unsort">Reset order</button></p>
+
+<div class="notes">
+  <div class="note">
+    <h3>Why block storage does not compare like object storage</h3>
+    <ul>
+      <li><b>You pay for what you provision, not what you store.</b> Every vendor here bills the allocated size of the volume, empty or full. Object storage bills the bytes actually held.</li>
+      <li><b>Performance is a separate line item</b> at AWS gp3 and io2, Azure Premium SSD v2 and Ultra, Google Hyperdisk and STACKIT. Everyone else folds it into the capacity rate, and caps it.</li>
+      <li><b>Azure, uniquely, sells fixed disk sizes.</b> A 600 GiB Premium SSD disk is billed as a 1,024 GiB P30. Change the volume count above and watch that rounding move the row.</li>
+      <li><b>Snapshots are not free</b> and are rarely priced like the volume. Exoscale charges the volume rate; AWS and Google charge roughly half; Hetzner does not offer them at all.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Who states their unit, and who doesn't</h3>
+    <ul>
+      <li><b>Binary, stated in writing</b> — AWS, Azure (meters read “1 GiB/Hour”), Google (“1 gibibyte month”), Exoscale (per GiB·hour), T Cloud Public (“1 GB = 1,073,741,824 Byte”).</li>
+      <li><b>Not stated</b> — OVHcloud, Scaleway, Hetzner, IONOS, Infomaniak, STACKIT. Those rows carry a <span class="flag">marker</span> and follow the selector at the top of the page. The gap between the two assumptions is 7.4 %.</li>
+      <li>OVHcloud prints <code>GiB</code> for object storage but <code>GB</code> for block storage, without defining either.</li>
+      <li><b>The storage medium</b> under each class is the vendor's own words. The filter groups them into <i>HDD &amp; magnetic</i>, <i>SSD</i>, and <i>Premium SSD</i> — the last being each vendor's own top-performance flash tier, not a judgement about the hardware. Google's Hyperdisk Throughput sits with the HDDs because Google itself compares its latency to a hard disk. STACKIT states no medium anywhere and gets its own bucket.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Regions and redundancy are not interchangeable</h3>
+    <ul>
+      <li><b>AWS EBS and Azure managed disks are single-zone</b> by default. Azure ZRS and Google Regional PD or Hyperdisk Balanced HA are the multi-zone rows, and they cost 1.5× to 2×.</li>
+      <li><b>OVHcloud</b> charges the same rate for its 3-AZ Regional Classic Volume as for the single-zone Classic Volume — the only vendor here that does not price zone redundancy separately.</li>
+      <li><b>Hetzner, Infomaniak and Exoscale</b> keep several copies inside one zone; Hetzner says three physical servers, Infomaniak three Ceph replicas.</li>
+      <li><b>Scaleway, IONOS and STACKIT</b> publish no redundancy model for block storage at all.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Documented gaps, left as gaps</h3>
+    <ul>
+      <li><b>T Cloud Public</b> (formerly Open Telekom Cloud) publishes no EVS rate card. Its pricing-model page uses 4.6 ct/GB-month in a worked example; that is an illustration, not a price list, so the row carries no figure.</li>
+      <li><b>Azure snapshots</b> are the most contested field on this page. The retail feed carries $0.145/GiB-month against Premium SSD, $0.05 against Standard HDD, and hourly instant-access meters for Premium SSD v2 and Ultra. Incremental snapshots land on standard storage, so $0.05 is used for the P, E and S rows.</li>
+      <li><b>IONOS</b> shows €0.04/GB/30 d for Essential on the German page and $0.0533 on the US page — a gap FX does not explain, the same pattern as its object storage pricing.</li>
+      <li><b>STACKIT</b> lists every SKU twice, with and without an <code>-m</code> suffix at roughly double the price. The suffix is never defined; the non-<code>-m</code> EU01 rates are used.</li>
+      <li><b>Hetzner</b> ranks first partly because its row carries no snapshot cost — it offers none for volumes. That is a missing capability, not a discount.</li>
+      <li><b>Wasabi, Backblaze and Cloudflare</b> sell no block storage and are absent from this page by design.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Scenario assumptions</h3>
+    <ul>
+      <li>The capacity, IOPS and throughput figures are <b>per volume</b>; the provisioned total is split evenly across the volume count. That matters because free IOPS baselines and Azure's size ladder are per disk.</li>
+      <li>The chart's <b>Capacity only</b> toggle drops provisioned IOPS, throughput and snapshots. It is there to separate the shelf price from the bill: STACKIT is second cheapest on capacity and ninth once its per-disk performance class is added, and AWS io2 moves further still.</li>
+      <li>Rows whose published ceiling cannot deliver the requested IOPS, throughput or volume size are marked <span class="short">⚠</span> and their cost is what the vendor would charge for the largest configuration they do offer.</li>
+      <li>Per-I/O charges — Azure Standard SSD and HDD transactions, AWS magnetic — are shown but not monetised: both need an I/O profile specific to the workload. Rows carrying one are marked <span class="np">+io</span>.</li>
+      <li>Attachment limits, multi-attach, encryption keys, cross-region replication and Ultra Disk's per-vCPU reservation are shown in the notes but not costed.</li>
+      <li>Prices exclude VAT, negotiated discounts and commitment terms.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>How the rates were collected</h3>
+    <p>Every figure comes from the vendor's own price feed where one exists, so nothing depends on reading a rendered table:</p>
+    <ul>
+      <li><b>AWS</b> — the Price List Bulk API, <code>AmazonEC2</code> offer for <code>eu-central-1</code>, product families <i>Storage</i>, <i>System Operation</i> and <i>Provisioned Throughput</i>, publication 9 September 2026.</li>
+      <li><b>Azure</b> — the Retail Prices API, <code>armRegionName eq 'germanywestcentral'</code>.</li>
+      <li><b>Google</b> — the pricing tables embedded in the disks-and-images pricing page, Frankfurt column.</li>
+      <li><b>OVHcloud</b> — the public order catalogue, <code>/order/catalog/public/cloud</code> for the DE subsidiary. <b>Exoscale</b> — the pricing API its own price page consumes. <b>STACKIT</b> — price list PDF v1.0.43.</li>
+      <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="srcs">
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 10 September 2026</h2>
+  <ul>
+    <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a></li>
+    <li><a href="https://www.exoscale.com/block-storage/">exoscale.com/block-storage</a></li>
+    <li><a href="https://aws.amazon.com/ebs/pricing/">aws.amazon.com/ebs/pricing</a> (eu-central-1)</li>
+    <li><a href="https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/eu-central-1/index.csv">AWS Price List Bulk API — EC2, eu-central-1</a></li>
+    <li><a href="https://azure.microsoft.com/en-us/pricing/details/managed-disks/">azure.microsoft.com — Managed Disks</a></li>
+    <li><a href="https://prices.azure.com/api/retail/prices">Azure Retail Prices API</a> (germanywestcentral)</li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types">Microsoft Learn — Azure managed disk types</a></li>
+    <li><a href="https://cloud.google.com/compute/disks-image-pricing">cloud.google.com — disk and image pricing</a> (europe-west3)</li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.ovhcloud.com/en/public-cloud/block-storage/">ovhcloud.com — Block Storage classes</a></li>
+    <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://www.hetzner.com/cloud/block-storage/">hetzner.com — Cloud Block Storage</a></li>
+    <li><a href="https://docs.hetzner.com/cloud/volumes/overview/">docs.hetzner.com — Volumes overview</a></li>
+    <li><a href="https://cloud.ionos.de/storage/block-storage">cloud.ionos.de — Block Storage</a></li>
+    <li><a href="https://www.infomaniak.com/en/hosting/public-cloud/prices">infomaniak.com — public cloud prices</a></li>
+    <li><a href="https://stackit.com/en/prices/cloud">stackit.com — price list v1.0.43</a></li>
+    <li><a href="https://www.t-cloud-public.com/en/prices/pricing-models/storage">t-cloud-public.com — storage pricing model</a></li>
+  </ul>
+</div>
+</div>
+

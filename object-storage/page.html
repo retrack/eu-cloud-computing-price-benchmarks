@@ -1,0 +1,132 @@
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Exoscale SOS · competitive pricing</p>
+  <h1>Object storage in Europe:<br>what a gigabyte actually costs</h1>
+  <p class="standfirst">Every rate was read on 7 September 2026 from the vendors' own pricing pages and normalised to a single basis: <strong>euros per GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. The scenario cost on each row recalculates with your own volumes.</p>
+  <div class="stamp">
+    <span>Observed <b>2026-09-07</b></span>
+    <span>Basis <b id="stamp-hours">730 h/month</b></span>
+    <span>Unit <b>GiB (2³⁰ bytes)</b></span>
+    <span>FX <b id="stamp-fx"></b></span>
+    <span>Prices <b>excl. VAT</b></span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-grid">
+    <div class="field"><label for="in-stored">Stored (TiB)</label><input id="in-stored" type="number" min="0" step="1" value="100"></div>
+    <div class="field"><label for="in-egress">Egress (TiB/month)</label><input id="in-egress" type="number" min="0" step="0.5" value="10"></div>
+    <div class="field"><label for="in-put">PUT (millions/month)</label><input id="in-put" type="number" min="0" step="0.5" value="2"></div>
+    <div class="field"><label for="in-get">GET (millions/month)</label><input id="in-get" type="number" min="0" step="1" value="20"></div>
+    <div class="field"><label for="in-hours">Hours per month</label>
+      <select id="in-hours">
+        <option value="720">720 h — 30-day month</option>
+        <option value="730" selected>730 h — annual average</option>
+        <option value="744">744 h — 31-day month</option>
+      </select></div>
+    <div class="field"><label for="in-unit">“GB” left undefined by the vendor</label>
+      <select id="in-unit">
+        <option value="decimal" selected>treat as decimal GB (10⁹)</option>
+        <option value="binary">treat as GiB (2³⁰)</option>
+      </select></div>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="panel-sub" id="panel-sub"></p>
+
+<h2 class="section-title" id="rank-title">Normalised storage price — € per GiB per month</h2>
+<div class="rank" id="rank"></div>
+
+<h2 class="section-title">Rate detail and scenario cost</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr id="thead-row">
+      <th class="sortable" data-sort="vendor">Vendor</th>
+      <th class="sortable" data-sort="cls">Class · region</th>
+      <th>Published rate</th>
+      <th class="num sortable" data-sort="unit">€/GiB-month</th>
+      <th class="num sortable" data-sort="egress">Egress</th>
+      <th class="num sortable" data-sort="put">PUT / GET<br>per 1,000</th>
+      <th class="num sortable" data-sort="retr">Retrieval</th>
+      <th class="num sortable" data-sort="mindays">Min. duration</th>
+      <th>Redundancy</th>
+      <th class="num sortable" data-sort="cost">Scenario cost<br>€/month</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p class="sorthint">Click a column header to sort; click again to reverse.
+  <button type="button" id="unsort">Reset order</button></p>
+
+<div class="notes">
+  <div class="note">
+    <h3>Who states their unit, and who doesn't</h3>
+    <ul>
+      <li><b>Binary, stated in writing</b> — AWS (“1 GB is 2³⁰ bytes”), Azure, Google (“JEDEC binary gigabytes”), Exoscale (billed per GiB-hour), OVHcloud (GiB column), Wasabi (1 TB = 1,024 GB).</li>
+      <li><b>Not stated</b> — Hetzner, Backblaze, Scaleway, IONOS, Cloudflare, Infomaniak, STACKIT. Those rows carry a <span class="flag">marker</span> and follow the selector at the top of the page. The gap between the two assumptions is 7.4 %.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Regions are not interchangeable</h3>
+    <ul>
+      <li><b>OVHcloud</b>: the 3-AZ multi-zone offer exists only in Paris and Milan. In Frankfurt/Limburg it is single-zone — that is the row to compare against Frankfurt.</li>
+      <li><b>Backblaze</b>: the European region is Amsterdam, not Frankfurt.</li>
+      <li><b>Infomaniak</b>: Switzerland. <b>STACKIT</b>: Germany South. <b>Exoscale</b>: 8 zones across CH/DE/AT/BG/HR.</li>
+      <li><b>Azure Hot LRS</b> is single-datacentre: the honest comparison against S3 Standard is Hot ZRS.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Documented gaps, left as gaps</h3>
+    <ul>
+      <li><b>STACKIT</b> publishes neither traffic nor request pricing. Its scenario cost is therefore a floor, marked <span class="np">≥</span>.</li>
+      <li><b>T Cloud Public</b> (formerly Open Telekom Cloud) publishes no storage price at all: calculator only.</li>
+      <li><b>IONOS</b> shows €0.007/GB/30 d on the German page and $0.00487/GB/30 d on the US page — a ~44 % gap FX does not explain.</li>
+      <li><b>Wasabi</b> publishes no rate card for its commitment discounts: the “max discount” on the current chart cannot be sourced.</li>
+      <li><b>Exoscale</b> charges no requests, but nowhere states so explicitly.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Scenario assumptions</h3>
+    <ul>
+      <li>Retrieval fees apply to the month's egress volume: pulling 10 TiB out of a cold class means restoring it first.</li>
+      <li>Storage and egress volume tiers are applied tier by tier, not at an average rate.</li>
+      <li>Minimum storage durations are not monetised — that needs a churn rate specific to each workload. The column states them.</li>
+      <li>Minimum billable object sizes (128 KiB at Exoscale and AWS, 64 KB at Hetzner, 4 KB at Wasabi) weigh heavily on a small-object estate and are likewise not monetised.</li>
+      <li>Prices exclude VAT, negotiated discounts and commitment terms.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>How the rates were collected</h3>
+    <p>AWS, Azure, Google, Hetzner and Exoscale render their prices in JavaScript: values were read from the rendered DOM with the region explicitly selected, or straight from the price feeds those pages consume (AWS <code>meteredUnitMaps</code> files, the Azure Retail Prices API, Hetzner's price API). Two cautions:</p>
+    <ul>
+      <li>Hetzner's launch press release still shows €4.99/month and €0.0067/TB·h; its price API — the one feeding the product page — returns <b>€6.49 and €0.0087/TB·h</b>. The latter is what is used here.</li>
+      <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="srcs">
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 7 September 2026</h2>
+  <ul>
+    <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a></li>
+    <li><a href="https://www.exoscale.com/object-storage/classes/">exoscale.com/object-storage/classes</a></li>
+    <li><a href="https://aws.amazon.com/s3/pricing/">aws.amazon.com/s3/pricing</a> (eu-central-1)</li>
+    <li><a href="https://azure.microsoft.com/en-us/pricing/details/storage/blobs/">azure.microsoft.com — Blob Storage</a></li>
+    <li><a href="https://cloud.google.com/storage/pricing">cloud.google.com/storage/pricing</a> (europe-west3)</li>
+    <li><a href="https://wasabi.com/pricing">wasabi.com/pricing</a></li>
+    <li><a href="https://www.hetzner.com/storage/object-storage/">hetzner.com — Object Storage</a></li>
+    <li><a href="https://www.backblaze.com/cloud-storage/pricing">backblaze.com — B2 pricing</a></li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://cloud.ionos.de/storage/object-storage">cloud.ionos.de — Object Storage</a></li>
+    <li><a href="https://developers.cloudflare.com/r2/pricing/">developers.cloudflare.com/r2/pricing</a></li>
+    <li><a href="https://www.infomaniak.com/en/hosting/public-cloud/prices">infomaniak.com — public cloud</a></li>
+    <li><a href="https://stackit.com/en/products/storage/stackit-object-storage">stackit.com — price list v1.0.43</a></li>
+    <li><a href="https://www.t-cloud-public.com/en/prices">t-cloud-public.com/prices</a></li>
+    <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage_lens_metrics_glossary.html">AWS — binary definition of “GB”</a></li>
+  </ul>
+</div>
+</div>
+

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EU Cloud Computing Price Benchmarks</title>
+<meta name="description" content="Normalised European cloud price comparisons — one unit, one hour basis, one currency, with an adjustable total-cost scenario.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F5; --line:#D8DFE7; --line-soft:#E7ECF1;
+  --ink:#0E1A2B; --ink-2:#3B4B60; --muted:#6C7C92;
+  --accent:#DA291C;
+  --shadow:0 1px 2px rgba(14,26,43,.06), 0 8px 24px -16px rgba(14,26,43,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+    --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+    --accent:#FF6155;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+  --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+  --accent:#FF6155;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink); margin:0;
+  font-family:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px; margin:0 auto; padding:0 24px 96px}
+header{padding:56px 0 26px; border-bottom:3px solid var(--accent)}
+.eyebrow{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 12px;
+}
+h1{
+  font-family:Archivo, "Helvetica Neue", sans-serif; font-weight:700; letter-spacing:-.02em;
+  font-size:clamp(30px,5vw,46px); line-height:1.05; margin:0 0 16px; text-wrap:balance;
+}
+.standfirst{max-width:62ch; color:var(--ink-2); font-size:16.5px; margin:0}
+h2{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); font-weight:600;
+  margin:44px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--line-soft);
+}
+.card{
+  display:block; text-decoration:none; color:inherit;
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:22px 24px; margin-bottom:14px;
+}
+.card:hover{border-color:var(--accent)}
+.card:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+.card h3{
+  font-family:Archivo, sans-serif; font-size:20px; font-weight:600; letter-spacing:-.01em;
+  margin:0 0 6px; color:var(--ink);
+}
+.card p{margin:0 0 12px; color:var(--ink-2); font-size:14.5px; max-width:62ch}
+.meta{
+  display:flex; flex-wrap:wrap; gap:6px 18px;
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--muted);
+}
+.meta b{color:var(--ink-2); font-weight:500}
+.soon{
+  border:1px dashed var(--line); border-radius:10px; padding:18px 24px;
+  color:var(--muted); font-size:14px; background:none; box-shadow:none;
+}
+ol{margin:0; padding-left:20px; max-width:64ch}
+li{color:var(--ink-2); margin-bottom:10px}
+li b{color:var(--ink)}
+footer{
+  margin-top:48px; padding-top:20px; border-top:1px solid var(--line);
+  color:var(--muted); font-size:13px; max-width:66ch;
+}
+footer a{color:var(--ink-2)}
+footer a:hover{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Normalised list prices · Europe</p>
+  <h1>EU Cloud Computing<br>Price Benchmarks</h1>
+  <p class="standfirst">Published cloud prices are not comparable as printed. These pages normalise them — one unit, one hour basis, one currency — and put an adjustable total-cost scenario next to the headline rate.</p>
+</header>
+
+<h2>Benchmarks</h2>
+
+<a class="card" href="object-storage/index.html">
+  <h3>Object storage</h3>
+  <p>S3-compatible buckets across 14 vendors, from S3 Standard to Glacier Deep Archive. Storage, egress, requests, retrieval, minimum durations and redundancy, with a scenario cost that recalculates from your own volumes.</p>
+  <div class="meta">
+    <span>Observed <b>2026-09-07</b></span>
+    <span><b>35</b> vendor × class</span>
+    <span>Basis <b>730 h · GiB · EUR</b></span>
+  </div>
+</a>
+
+<a class="card" href="block-storage/index.html">
+  <h3>Block storage</h3>
+  <p>EBS-shaped volumes — attachable, resizable, snapshottable. Ranked on the effective price of the scenario: capacity plus provisioned IOPS, throughput and snapshots. Rows that cannot deliver the requested performance are marked rather than ranked first for being cheap.</p>
+  <div class="meta">
+    <span>Observed <b>2026-09-10</b></span>
+    <span><b>37</b> vendor × class</span>
+    <span>Basis <b>730 h · provisioned GiB · EUR</b></span>
+  </div>
+</a>
+
+<div class="card soon">Each benchmark is a folder in the repository, composed from a shared shell and its own dataset, markup and cost model. The maintenance guide documents how to add another.</div>
+
+<h2>What gets normalised</h2>
+
+<ol>
+  <li><b>The unit.</b> Several vendors bill in binary units (1 GB = 2³⁰ bytes) while printing "GB"; others state no basis at all. Decimal versus binary is a 7.4 % difference on the same physical bytes.</li>
+  <li><b>The month.</b> Vendors that bill hourly extrapolate using 720, 730 or 744 hours, depending on who is doing the extrapolating. A 3 % spread on its own.</li>
+  <li><b>What the headline excludes.</b> Egress, requests and retrieval fees on the object side; provisioned IOPS, throughput and snapshots on the block side — which at AWS io2 can cost four times the capacity itself.</li>
+</ol>
+
+<h2>House rules</h2>
+
+<ol>
+  <li><b>One basis, stated on the page</b> — 730 h/month, euros, excluding VAT, with the ECB reference rate and its date in the header. Every dataset carries the same rate.</li>
+  <li><b>Physical units, not billing units</b> — decimal-unit vendors are converted, so the comparison is per unit of what you actually get.</li>
+  <li><b>Nothing is estimated</b> — a charge a vendor does not publish reads <i>not published</i>, and a scenario total missing a component is prefixed <b>≥</b> rather than quietly treated as zero.</li>
+  <li><b>Regions are labelled per row</b> — where a vendor has no equivalent of the reference region, the row says which region it actually is.</li>
+  <li><b>Capability gaps are not discounts</b> — a vendor that cannot deliver the scenario is marked, and a product a vendor does not offer is absent, not free.</li>
+</ol>
+
+<footer>
+  Maintained by someone who works at Exoscale; Exoscale's rows are highlighted in the tables. Figures come from each vendor's own published pages, all sourced at the bottom of each benchmark. Treat this as a starting point for your own verification, not as an authority — and note that list prices ignore the negotiated discounts and commitment terms where large deals are actually decided.
+  <br><br>
+  <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> · <a href="https://github.com/retrack/eu-cloud-computing-price-benchmarks">source on GitHub</a>
+</footer>
+
+</div>
+</body>
+</html>
