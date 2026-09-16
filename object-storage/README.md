@@ -1,7 +1,7 @@
 # Object storage — Europe
 
 S3-compatible object storage list prices, normalised to **euros per GiB per month on a
-730-hour basis**, Frankfurt region or the closest each vendor operates. 35 vendor × class
+730-hour basis**, Frankfurt region or the closest each vendor operates. 36 vendor × class
 rows across 14 vendors.
 
 Open [`index.html`](index.html). Prices observed **7 September 2026**.
