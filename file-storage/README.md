@@ -27,12 +27,12 @@ charges, divided by the GiB you asked to hold. A toggle switches the chart to ca
 | Unit assumption | decimal | for vendors that never define their "GB" — or, at IONOS, their "TB" |
 | Chart metric | Effective | switches the bar chart between the effective price and capacity alone |
 
-Three behaviours are specific to this page:
+Four behaviours are specific to this page:
 
 - **Capacity floors are modelled.** Google Filestore Basic SSD will not sell a share below
   2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's
-  high-performance tier at 500 GiB; UpCloud at 250 GiB; OVHcloud at 150 GiB; Azure's
-  provisioned tiers at 32 GiB; Scaleway at 25 GB. Ask for less and the row is
+  high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB;
+  OVHcloud at 150 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB. Ask for less and the row is
   marked ▲, its bar hatched, and the cost is what the vendor would actually invoice. Both
   chart metrics divide by the GiB you *asked for*, not the GiB billed, so a floor shows up as
   a higher price per gigabyte instead of disappearing into the denominator.
@@ -41,9 +41,18 @@ Three behaviours are specific to this page:
   share is dominated by its performance floor. AWS, by contrast, includes 50 MiB/s per TiB of
   Standard storage and bills Provisioned Throughput only above it — at the default 2 TiB and
   100 MiB/s that charge is zero.
-- **Rows that cannot deliver the scenario are marked ⚠.** OVHcloud tops out at 128 MiB/s and
-  Scaleway at 200 MiB/s; raise the throughput control past those and both are flagged rather
-  than ranked first for being cheap.
+- **Rows that cannot deliver the scenario are marked ⚠.** Google Filestore Basic HDD publishes
+  600 read IOPS between 1 and 10 TiB and 1,000 above it, so it is flagged at the default 3,000
+  and cannot reach it at any size Google sells; OVHcloud tops out at 128 MiB/s and DigitalOcean
+  Standard at 119. A flagged row is costed at the most the vendor does offer rather than being
+  dropped or ranked first for being cheap.
+- **Published limits are a column, and most of them move.** The capacity range each vendor sells
+  sits beside the performance ceiling for one share. Those ceilings are rarely flat numbers:
+  OVHcloud sells 24 IOPS and 0.25 MiB/s per provisioned GiB, Scaleway 12 IOPS and 0.1 MB/s per GB
+  above a 25 GB baseline, Google quotes every scalable tier per TiB, and DigitalOcean's high
+  performance tier adds 1 Gbps per TiB above the first. The column shows each one **at the size
+  being billed**, so it moves with the capacity control instead of quoting a maximum reached only
+  at 100 TiB. AWS is the only vendor here publishing no capacity ceiling at all.
 
 ## Conventions specific to this benchmark
 
@@ -58,6 +67,11 @@ Three behaviours are specific to this page:
   missing component as zero.
 - Minimum storage durations (EFS Archive, 90 days) and minimum billable file sizes (EFS IA and
   Archive, 128 KiB) are shown but not monetised.
+- Published limits come from the documentation, not the price pages, and are recorded as the
+  vendor states them: where a vendor splits read from write, the figure checked is the read side
+  and the note carries both. A default quota that can be raised on request (AWS) is recorded at
+  its default. A measured benchmark is not a limit — IONOS's iozone figures are shown and nothing
+  is checked against them.
 - EFS is costed in its default Elastic Throughput mode; the Provisioned Throughput row shows
   the alternative, where throughput is bought up front and nothing is charged per GiB moved.
 
@@ -65,15 +79,17 @@ Three behaviours are specific to this page:
 
 | Item | Status |
 |---|---|
-| T Cloud Public SFS rate | no rate card — calculator and console only. The pricing-model page says only that SFS follows the EVS model and that, unlike EVS, "only the actual stored data is billed". |
-| STACKIT performance | Standard, Premium and Ultra are priced at €0.22, €0.36 and €0.65 per GB-month with no IOPS or throughput figure published for any of them — nothing on the price list says what the extra 62 % or 188 % buys |
+| T Cloud Public SFS | no rate card — calculator and console only. The pricing-model page says only that SFS follows the EVS model and that, unlike EVS, "only the actual stored data is billed". It publishes no capacity range and no performance ceiling either. |
+| STACKIT performance | Standard, Premium and Ultra are priced at €0.22, €0.36 and €0.65 per GB-month with no IOPS or throughput figure published for any of them — nothing on the price list says what the extra 62 % or 188 % buys, and the limits page offers only an expected backend latency under 2 ms |
 | STACKIT "Metro" | the product page advertises a two-zone synchronous version that does not appear in the price list at all |
-| IONOS | no performance figure and no redundancy model published for NFS; quoted per TB without stating which TB, so both the TB→GB and the GiB→GB conversions follow the unit selector |
-| Scaleway | the price table prints "€0.000221/HOUR" with no unit; that it is per GB follows from the legal notice beneath it, not from the number |
+| IONOS performance | published as iozone benchmark results — ≈24,000 read and ≈18,000 write IOPS on a 4 TiB cluster, ≈370 MB/s read per TiB, scaling linearly — rather than as a ceiling IONOS undertakes to hold. Shown in the Performance column; no ⚠ check is made against it |
+| IONOS unit | quoted per TB without stating which TB, so both the TB→GB and the GiB→GB conversions follow the unit selector — while the cluster size the same vendor publishes is stated in TiB |
+| Scaleway | the price table prints "€0.000221/HOUR" with no unit; that it is per GB follows from the legal notice beneath it, not from the number. Its throughput ceiling is published in MB/s and is not converted here, so the 200 shown are 191 MiB/s |
+| Capacity ranges in GB | Scaleway (25 GB – 50 TB), STACKIT (500 GB – 20 TB) and UpCloud (250 GB – 25 TB) state their capacity ranges in decimal units; the page holds them in its GiB fields unconverted, so those three ranges are read about 7 % high |
 | Azure pay-as-you-go | transaction charges published but not monetisable without an I/O-size assumption; those rows are floors |
 | Azure Files reservations | up to 36 % off storage, not modelled — like every other commitment discount on these pages |
-| UpCloud | no IOPS or throughput figure published; the price table writes "250 GB" in the size column beside "per GiB" in the price column, and the product page's "from 250 GiB" is what is used |
-| DigitalOcean | throughput published in Gbps with no IOPS figure; the MiB/s shown is converted. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent. |
+| UpCloud | no IOPS or throughput figure published anywhere — the capacity range, "250 GB to 25 TB per instance", is the whole of it. The price table writes "250 GB" in the size column beside "per GiB" in the price column, and the product page's "from 250 GiB" is what is used |
+| DigitalOcean | throughput published in Gbps, converted here at 119 MiB/s per Gbps; the high performance tier's ceiling grows by 1 Gbps per TiB above the first. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent. |
 | Hetzner, Infomaniak, Cloudflare | no managed shared file system; absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region. |
 
 ## Rebuilding

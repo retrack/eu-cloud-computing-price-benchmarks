@@ -69,11 +69,36 @@ function scenario(r){
     short: shortfall(r)
   };
 }
+/* A published ceiling is a plain number, INF where the vendor publishes none, null where it
+   publishes nothing at all, an object that grows with the capacity provisioned, or a ladder of
+   C(upTo, …) bands where the vendor publishes a different rule in each capacity range. The
+   growing ones are the common case here: OVHcloud and Scaleway sell performance with the
+   gigabytes, and Google quotes every scalable tier per TiB. */
+function ceilAt(spec, gib){
+  if(spec === null || spec === undefined) return null;
+  if(typeof spec === "number") return spec;
+  if(Array.isArray(spec)) return ceilAt((spec.find(b => gib <= b.upTo) || spec[spec.length - 1]).v, gib);
+  const over = Math.max(0, gib - (spec.from || 0));
+  const grown = (spec.base || 0) + (spec.perGiB || 0) * over + (spec.perTiB || 0) * over / 1024;
+  return spec.cap != null ? Math.min(grown, spec.cap) : grown;
+}
+const scales = spec => spec !== null && typeof spec === "object";
+
+/* Capacity ceilings read better in TiB. A vendor quoting an undefined "GB" is converted like
+   every other figure on the page, and its own wording is in the note beneath. */
+function gibLabel(v){
+  if(v === null || v === undefined) return "not published";
+  if(v === INF) return "no published ceiling";
+  return v < 1024 ? num(v) + " GiB" : num(Math.round(v / 102.4) / 10) + " TiB";
+}
+
 function shortfall(r){
-  const out = [];
-  if(r.max.iops != null && S.iops > r.max.iops) out.push("tops out at " + num(r.max.iops) + " IOPS");
-  if(r.max.mbs  != null && S.mbs  > r.max.mbs)  out.push("tops out at " + num(r.max.mbs) + " MiB/s");
-  if(r.max.size != null && S.stored > r.max.size) out.push("largest share is " + num(r.max.size) + " GiB");
+  const out = [], gib = billedGiB(r);
+  const at = spec => scales(spec) ? " at " + num(gib) + " GiB" : "";
+  const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
+  if(iops != null && S.iops > iops) out.push("tops out at " + num(Math.round(iops)) + " IOPS" + at(r.max.iops));
+  if(mbs  != null && S.mbs  > mbs)  out.push("tops out at " + num(Math.round(mbs))  + " MiB/s" + at(r.max.mbs));
+  if(r.maxGiB != null && S.stored > r.maxGiB) out.push("largest share is " + gibLabel(r.maxGiB));
   return out;
 }
 
@@ -128,6 +153,26 @@ function perfCell(r){
   return '<span class="chip">' + esc(line) + "</span>"
        + (p.note ? '<span class="sub" style="text-align:left">' + esc(p.note) + "</span>" : "");
 }
+/* What the vendor will not go past: the capacity range it sells, and the performance ceilings
+   for one share. Ceilings that grow with capacity are shown at the size being billed, so the
+   figure moves with the control rather than quoting a maximum reached only at 100 TiB. */
+function limitsCell(r){
+  const gib = billedGiB(r);
+  const range = (r.minGiB == null && r.maxGiB == null)
+    ? '<span class="np">not published</span>'
+    : '<span class="chip">' + esc((r.minGiB === 0 ? "no minimum" : gibLabel(r.minGiB))
+                                  + " – " + gibLabel(r.maxGiB)) + "</span>";
+  const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
+  const one = (v, label) => v === null ? '<span class="np">' + label + " not published</span>"
+            : v === INF ? "no " + label + " ceiling"
+            : num(Math.round(v)) + " " + label;
+  const grows = scales(r.max.iops) || scales(r.max.mbs);
+  const perfLine = (iops === null && mbs === null) ? ""
+    : '<span class="sub" style="text-align:left">' + one(iops, "IOPS") + " · " + one(mbs, "MiB/s")
+      + (grows ? " at " + num(gib) + " GiB" : "") + "</span>";
+  return range + perfLine
+       + (r.maxNote ? '<span class="sub" style="text-align:left">' + esc(r.maxNote) + "</span>" : "");
+}
 
 /* ---------------- rendering ---------------- */
 const SORT = { col:null, dir:1 };
@@ -173,6 +218,7 @@ function render(){
     capunit: r => capUnit(r),
     effunit: r => effUnit(r),
     billed:  r => r.rate === null ? null : billedGiB(r),
+    limits:  r => ceilAt(r.max.iops, billedGiB(r)),
     iops:    r => r.iops ? r.iops.rate * hf(r.iops.per) * FX[r.cur] : 0,
     tput:    r => r.tput ? r.tput.rate * hf(r.tput.per) * FX[r.cur] : 0,
     access:  r => r.access ? (r.access.read + r.access.write) * ufc(r.access.unit) * FX[r.access.cur || r.cur] : 0,
@@ -209,6 +255,7 @@ function render(){
       + '<td class="num">' + fmtU(capUnit(r)) + "</td>"
       + '<td class="num big">' + fmtU(effUnit(r)) + "</td>"
       + "<td>" + perfCell(r) + "</td>"
+      + "<td>" + limitsCell(r) + "</td>"
       + '<td class="num">' + perfChargeCell(r.iops, r, "IOPS-month") + "</td>"
       + '<td class="num">' + perfChargeCell(r.tput, r, "MiB/s-month") + "</td>"
       + '<td class="num">' + accessCell(r)

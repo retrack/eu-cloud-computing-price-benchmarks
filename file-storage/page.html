@@ -58,6 +58,7 @@
       <th class="num sortable" data-sort="capunit">Capacity<br>€/GiB-month</th>
       <th class="num sortable" data-sort="effunit">Effective<br>€/GiB-month</th>
       <th>Performance</th>
+      <th class="sortable" data-sort="limits">Published limits</th>
       <th class="num sortable" data-sort="iops">IOPS<br>charge</th>
       <th class="num sortable" data-sort="tput">MiB/s<br>charge</th>
       <th class="num sortable" data-sort="access">Read / write<br>€/GiB</th>
@@ -81,9 +82,18 @@
     <h3>The capacity floor is the thing the headline rate hides</h3>
     <ul>
       <li><b>AWS EFS has no minimum at all</b> and bills the bytes actually held. So do Azure's pay-as-you-go tiers and, by its own description, T Cloud Public's SFS.</li>
-      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
+      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
       <li>Ask for less than a vendor's minimum and the row is marked <span class="short">▲</span>, its bar hatched, and the cost is what they would actually invoice. Drop the capacity control below 2,560 GiB and watch Google Basic SSD stop moving.</li>
       <li>Both chart metrics divide by the GiB you <i>asked for</i>, not the GiB billed, so a floor shows up as a higher price per gigabyte rather than disappearing into the denominator.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>The ceiling moves with the capacity you buy</h3>
+    <ul>
+      <li>The <b>Published limits</b> column is the capacity range each vendor sells and the performance ceiling for one share — what you cannot buy past, as opposed to the <i>Performance</i> column beside it, which is what the capacity rate already gives you.</li>
+      <li>Most of these ceilings are not fixed numbers. OVHcloud sells 24 IOPS and 0.25 MiB/s per provisioned GiB, Scaleway 12 IOPS and 0.1 MB/s per GB above its 25 GB baseline, and Google quotes every scalable tier per TiB. Those rows are shown <b>at the size being billed</b>, so the figure moves as you change the capacity control rather than quoting a maximum you would only reach at 100 TiB.</li>
+      <li>It is where the cheap rows stop being cheap. <b>Google Basic HDD</b> publishes 600 read IOPS between 1 and 10 TiB and 1,000 above it, so it cannot reach the default 3,000 IOPS at any size it sells, and it is marked <span class="short">⚠</span> and costed at the most Google does offer rather than dropped or rewarded for being cheap. <b>DigitalOcean Standard</b> clears the default comfortably but stops at 1 Gbps — 119 MiB/s — however large the share, so it is flagged the moment you ask for more.</li>
+      <li><b>AWS is the one vendor that publishes no capacity ceiling at all</b>, and its One Zone file systems are capped at a ninth of the Regional IOPS. Buying Provisioned Throughput lowers the ceiling rather than raising it — 55,000 read IOPS against Elastic's 250,000.</li>
     </ul>
   </div>
   <div class="note">
@@ -98,11 +108,11 @@
     <h3>Documented gaps, left as gaps</h3>
     <ul>
       <li><b>T Cloud Public</b> publishes no SFS rate card — calculator and console only, the same as its block and object storage. Its row carries no figure.</li>
-      <li><b>STACKIT</b> sells Standard, Premium and Ultra at €0.22, €0.36 and €0.65 per GB-month and publishes no IOPS or throughput figure for any of them, so nothing on its own price list says what the extra 62 % or 188 % buys. Its product page advertises a two-zone “Metro” version that does not appear in the price list at all.</li>
-      <li><b>IONOS</b> publishes no performance figure and no redundancy model for NFS, and quotes per TB without saying which TB.</li>
+      <li><b>STACKIT</b> sells Standard, Premium and Ultra at €0.22, €0.36 and €0.65 per GB-month and publishes no IOPS or throughput figure for any of them, so nothing says what the extra 62 % or 188 % buys — its limits page offers an expected backend latency under 2 ms and nothing else. Capacity is a resource pool of 500 GB to 20 TB holding up to 200 shares. Its product page advertises a two-zone “Metro” version that does not appear in the price list at all.</li>
+      <li><b>IONOS</b> quotes per TB without saying which TB, while sizing its cluster in TiB. The performance it publishes is a set of iozone measurements — ≈24,000 read IOPS on a 4 TiB cluster, ≈370 MB/s read per TiB — not a ceiling it undertakes to hold, so the page shows them and checks nothing against them.</li>
       <li><b>Scaleway</b> prints “€0.000221/HOUR” with no unit on the price table; that it is per GB follows from the legal notice beneath it, not from the number.</li>
       <li><b>Azure's pay-as-you-go tiers</b> charge per transaction. Those charges are published but cannot be turned into a monthly figure without assuming an average I/O size, so they are shown, marked <span class="np">+ops</span>, and the scenario total for those rows is a floor.</li>
-      <li><b>DigitalOcean</b> publishes throughput in Gbps and no IOPS figure at all; the MiB/s shown here is the converted figure, and the per-share ceiling is what the ⚠ check uses. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
+      <li><b>DigitalOcean</b> publishes its throughput in Gbps, converted here at 119 MiB/s per Gbps; the High performance tier's ceiling grows by 1 Gbps per TiB above the first, so it is shown at the size being billed. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
       <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The product page says the share runs from 250 GiB, so GiB is used.</li>
       <li><b>Hetzner, Infomaniak and Cloudflare</b> sell no managed shared file system and are absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region.</li>
     </ul>
@@ -126,6 +136,7 @@
       <li><b>Google</b> — the pricing tables embedded in the Filestore pricing page, Frankfurt column; capacity ranges from the service-tiers documentation.</li>
       <li><b>OVHcloud</b> — the public order catalogue, <code>/order/catalog/public/cloud</code> for the DE subsidiary. <b>STACKIT</b> — price list PDF v1.0.44. <b>IONOS</b> — the German price page.</li>
       <li><b>Scaleway, UpCloud and DigitalOcean</b> answer a plain fetch with a bot challenge or a 403; those three were read from the rendered page, with the per-product legal notice or FAQ opened to confirm the unit and the regions.</li>
+      <li>The <b>published limits</b> come from the documentation rather than the price pages — AWS's EFS quotas and performance specifications, Azure's scale targets, Google's service tiers and performance pages, Scaleway's performance-scaling reference, IONOS's technical specifications, STACKIT's limits page, DigitalOcean's NFS limits and features, and OVHcloud's and UpCloud's own product pages. T Cloud Public publishes none.</li>
       <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
     </ul>
   </div>
@@ -136,22 +147,27 @@
   <ul>
     <li><a href="https://aws.amazon.com/efs/pricing/">aws.amazon.com/efs/pricing</a> (eu-central-1)</li>
     <li><a href="https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEFS/current/eu-central-1/index.csv">AWS Price List Bulk API — EFS, eu-central-1</a></li>
+    <li><a href="https://docs.aws.amazon.com/efs/latest/ug/limits.html">docs.aws.amazon.com — Amazon EFS quotas</a> and <a href="https://docs.aws.amazon.com/efs/latest/ug/performance.html">performance specifications</a></li>
     <li><a href="https://azure.microsoft.com/en-us/pricing/details/storage/files/">azure.microsoft.com — Azure Files</a></li>
     <li><a href="https://prices.azure.com/api/retail/prices">Azure Retail Prices API</a> (germanywestcentral)</li>
-    <li><a href="https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing">Microsoft Learn — Azure Files billing models</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing">Microsoft Learn — Azure Files billing models</a> and <a href="https://learn.microsoft.com/en-us/azure/storage/files/storage-files-scale-targets">scale targets</a></li>
     <li><a href="https://cloud.google.com/filestore/pricing">cloud.google.com/filestore/pricing</a> (europe-west3)</li>
-    <li><a href="https://cloud.google.com/filestore/docs/service-tiers">cloud.google.com — Filestore service tiers</a></li>
+    <li><a href="https://cloud.google.com/filestore/docs/service-tiers">cloud.google.com — Filestore service tiers</a>, <a href="https://cloud.google.com/filestore/docs/performance">instance performance</a> and <a href="https://cloud.google.com/filestore/docs/limits">quotas and limits</a></li>
     <li><a href="https://www.ovhcloud.com/en/public-cloud/file-storage/">ovhcloud.com — File Storage</a></li>
     <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
     <li><a href="https://www.scaleway.com/en/file-storage/">scaleway.com — File Storage</a></li>
     <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://www.scaleway.com/en/docs/file-storage/reference-content/performance-scaling/">scaleway.com — File Storage performance scaling</a> and <a href="https://www.scaleway.com/en/docs/file-storage/faq/">quotas FAQ</a></li>
     <li><a href="https://cloud.ionos.de/preise">cloud.ionos.de — Preise</a></li>
+    <li><a href="https://docs.ionos.com/cloud/storage-and-backup/network-file-storage/overview/tech-specification-limitation">docs.ionos.com — NFS technical specifications and limitations</a></li>
     <li><a href="https://stackit.com/en/products/storage/stackit-file-storage">stackit.com — File Storage</a></li>
     <li><a href="https://stackit.com/en/prices/cloud">stackit.com — price list v1.0.44</a></li>
+    <li><a href="https://docs.stackit.cloud/products/storage/file-storage/basics/limits/">docs.stackit.cloud — File Storage limits</a></li>
     <li><a href="https://upcloud.com/pricing/">upcloud.com/pricing</a></li>
     <li><a href="https://upcloud.com/products/file-storage/">upcloud.com — File Storage</a></li>
     <li><a href="https://www.digitalocean.com/pricing/network-file-storage">digitalocean.com — Network File Storage pricing</a></li>
     <li><a href="https://www.digitalocean.com/products/storage/network-file-storage">digitalocean.com — Network File Storage</a></li>
+    <li><a href="https://docs.digitalocean.com/products/nfs/details/limits/">docs.digitalocean.com — NFS limits</a> and <a href="https://docs.digitalocean.com/products/nfs/details/features/">features</a></li>
     <li><a href="https://www.t-cloud-public.com/en/prices/pricing-models/storage">t-cloud-public.com — storage pricing model</a></li>
     <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a> — no file storage product</li>
   </ul>

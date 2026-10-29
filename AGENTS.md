@@ -113,6 +113,7 @@ The feeds that worked on 29 October 2026:
 | STACKIT | the price list PDF linked from `stackit.com/en/prices` — take the href from the rendered page, then fetch it **with a `Referer` of the prices page**, or the server silently returns the prices page HTML instead of the PDF. Run it through `pdftotext -layout`. The EU01 rows are Germany South; ignore the `-m` duplicates |
 | Scaleway | the price pages now answer a plain fetch with a bot challenge; read the rendered DOM, and open the per-product “Legal notice” before trusting a unit |
 | IONOS | `cloud.ionos.de/preise` renders server-side; the German page carries line items the English one does not |
+| Published limits | not on the price pages. AWS: `docs.aws.amazon.com/efs/latest/ug/limits.html` and `/performance.html` (the throughput table is per region — Frankfurt is in the larger group). Azure: `learn.microsoft.com/azure/storage/files/storage-files-scale-targets`, the per-share table, not the storage-account one. Google: `cloud.google.com/filestore/docs/performance` (capacity-based limits, and the custom-performance IOPS-per-TiB range) plus `/docs/limits`. Scaleway: `/docs/file-storage/reference-content/performance-scaling/` and the FAQ. IONOS: `docs.ionos.com/cloud/storage-and-backup/network-file-storage/overview/tech-specification-limitation`. STACKIT: `docs.stackit.cloud/products/storage/file-storage/basics/limits/`. DigitalOcean: `docs.digitalocean.com/products/nfs/details/limits/` and `/features/` — append `index.html.md` to any of its doc paths for markdown. OVHcloud and UpCloud publish theirs on the product page. T Cloud Public publishes none; its Open Telekom Cloud docs sit behind a proof-of-work bot gate and were not used |
 | UpCloud | `upcloud.com/pricing` renders server-side and carries every storage product in one page; the per-class performance figures are on `upcloud.com/products/block-storage/` and the regions on `upcloud.com/data-centres/`. A plain `curl` is refused — read the rendered DOM |
 | DigitalOcean | the price pages are thin; the authoritative figures are in the docs: `docs.digitalocean.com/products/spaces/details/pricing/`, `docs.digitalocean.com/products/volumes/details/limits/`, and `docs.digitalocean.com/platform/regional-availability/` for which products reach `fra1` and which stop at `ams3` |
 
@@ -205,14 +206,15 @@ is applied to, and what the vendor will refuse to sell you.
   rate:0.000196,        // capacity, per unit, per `bill` period; null = no public price
   billedOn:"provisioned",          // "stored" = the bytes held | "provisioned" = the share, empty or full
   minGiB:32,            // smallest share the vendor sells; 0 = none, null = not published
-  maxGiB:262144,
+  maxGiB:262144,        // largest it sells; null = not published, INF = no published ceiling
   baseFee:null,         // OR a flat per-instance charge, e.g. Google custom performance
   iops:{ min:3000, per:"h", rate:0.000053 },   // null = IOPS included in `rate`
   tput:{ min:100, per:"h", rate:0.000077 },    // null = throughput included
   access:null,          // OR per-GiB read/write charges, e.g. { read, write, cur, unit, note }
   ops:null,             // a published per-operation charge that cannot be monetised
   perf:{ iops:0, mbs:0, note:"…" },            // what the capacity rate includes, for display
-  max:{ iops:102400, mbs:10340, size:262144 }, // published ceilings, for the ⚠ check
+  max:{ iops:102400, mbs:10340 },  // published performance ceilings, for the ⚠ check
+  maxNote:"…",          // what the vendor publishes about them, in its own terms
   snap:{ rate:0.000196, cur:"USD", unit:"GiB", bill:"h" },   // null = none offered
   proto:"SMB · NFSv4.1", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" }
 ```
@@ -230,6 +232,26 @@ The shapes that matter:
   held. AWS includes 50 MiB/s per TiB of Standard storage and bills Provisioned Throughput
   only above it — at 2 TiB and 100 MiB/s that charge is zero, and a model without
   `freePerGiB` would overcharge AWS by the whole line.
+- **`max` is the ceiling, `perf` is what the rate gives you**, and on this page the ceiling
+  usually is not a number. `max.iops` and `max.mbs` each accept a number, `null` (not
+  published — which suppresses that check), `INF` (published as having no ceiling), an object
+  `{ base, from, perGiB, perTiB, cap }` for a ceiling bought with the capacity, or a ladder of
+  `C(upTo, …)` bands where the vendor publishes a different rule in each capacity range:
+
+  ```js
+  max:{ iops:{ perGiB:24, cap:16000 }, mbs:{ perGiB:0.25, cap:128 } }          // OVHcloud
+  max:{ iops:{ base:1000, from:25, perGiB:12, cap:25000 }, … }                 // Scaleway
+  max:{ iops:[C(10239, { perTiB:12000 }), C(INF, { perTiB:9200 })], … }        // Google Regional
+  max:{ iops:[C(10240, 600), C(INF, 1000)], mbs:[C(10240, 100), C(INF, 180)] } // Google Basic HDD
+  ```
+
+  `ceilAt()` in `page.js` resolves one against the capacity being billed, and both the ⚠ check
+  and the Published limits column use it, so the figure shown moves with the capacity control
+  rather than quoting a maximum reached only at 100 TiB. The capacity ceiling is **not** in
+  `max` — it is `maxGiB`, stated once beside `minGiB`. Where a vendor splits read from write,
+  record the read side and put both in `maxNote`. Record a default quota that can be raised on
+  request at its default (AWS), and do not record a measured benchmark as a ceiling at all:
+  IONOS publishes iozone results, so its `max` is `null` and the figures live in `perf`.
 - **`unit` accepts `"TB?"`** for IONOS, which quotes per TB and never says which TB. Both the
   TB→GB step and the GiB→GB step then follow the unit selector, which is why that row moves
   10 % between the two assumptions rather than 7.4 %. The helper lives in `file-storage/page.js`,
