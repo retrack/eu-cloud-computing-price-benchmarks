@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EU Object Storage Benchmark</title>
-<meta name="description" content="S3-compatible object storage list prices across 14 vendors in Europe, normalised to euros per GiB per month on a 730-hour basis.">
+<meta name="description" content="S3-compatible object storage list prices across 16 vendors in Europe, normalised to euros per GiB per month on a 730-hour basis.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -215,9 +215,9 @@ tr.is-exo td.key{color:var(--exo)}
 <header class="masthead">
   <p class="eyebrow">Exoscale SOS · competitive pricing</p>
   <h1>Object storage in Europe:<br>what a gigabyte actually costs</h1>
-  <p class="standfirst">Every rate was read on 7 September 2026 from the vendors' own pricing pages and normalised to a single basis: <strong>euros per GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. The scenario cost on each row recalculates with your own volumes.</p>
+  <p class="standfirst">Every rate was read on 29 October 2026 from the vendors' own pricing pages and normalised to a single basis: <strong>euros per GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. The scenario cost on each row recalculates with your own volumes.</p>
   <div class="stamp">
-    <span>Observed <b>2026-09-07</b></span>
+    <span>Observed <b>2026-10-29</b></span>
     <span>Basis <b id="stamp-hours">730 h/month</b></span>
     <span>Unit <b>GiB (2³⁰ bytes)</b></span>
     <span>FX <b id="stamp-fx"></b></span>
@@ -321,7 +321,7 @@ tr.is-exo td.key{color:var(--exo)}
 </div>
 
 <div class="srcs">
-  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 7 September 2026</h2>
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 29 October 2026</h2>
   <ul>
     <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a></li>
     <li><a href="https://www.exoscale.com/object-storage/classes/">exoscale.com/object-storage/classes</a></li>
@@ -331,12 +331,14 @@ tr.is-exo td.key{color:var(--exo)}
     <li><a href="https://wasabi.com/pricing">wasabi.com/pricing</a></li>
     <li><a href="https://www.hetzner.com/storage/object-storage/">hetzner.com — Object Storage</a></li>
     <li><a href="https://www.backblaze.com/cloud-storage/pricing">backblaze.com — B2 pricing</a></li>
-    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a>, and <a href="https://eu.api.ovh.com/v1/order/catalog/public/cloud?ovhSubsidiary=DE">the DE public cloud catalogue</a> for the One Zone classes</li>
     <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
     <li><a href="https://cloud.ionos.de/storage/object-storage">cloud.ionos.de — Object Storage</a></li>
+    <li><a href="https://upcloud.com/pricing">upcloud.com/pricing</a> and <a href="https://upcloud.com/products/object-storage/">Managed Object Storage</a></li>
+    <li><a href="https://docs.digitalocean.com/products/spaces/details/pricing/">docs.digitalocean.com — Spaces pricing</a> and <a href="https://docs.digitalocean.com/platform/regional-availability/">regional availability</a></li>
     <li><a href="https://developers.cloudflare.com/r2/pricing/">developers.cloudflare.com/r2/pricing</a></li>
     <li><a href="https://www.infomaniak.com/en/hosting/public-cloud/prices">infomaniak.com — public cloud</a></li>
-    <li><a href="https://stackit.com/en/products/storage/stackit-object-storage">stackit.com — price list v1.0.43</a></li>
+    <li><a href="https://stackit.com/en/products/storage/stackit-object-storage">stackit.com — price list v1.0.44</a></li>
     <li><a href="https://www.t-cloud-public.com/en/prices">t-cloud-public.com/prices</a></li>
     <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage_lens_metrics_glossary.html">AWS — binary definition of “GB”</a></li>
   </ul>
@@ -492,7 +494,7 @@ function wireReset(defaults, state, render, extra){
   });
 }
 
-// Object storage price dataset — observed 2026-09-07 from official vendor pages.
+// Object storage price dataset — observed 2026-10-29 from official vendor pages and price feeds.
 // Storage rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
 const FX = { EUR: 1, USD: 0.898230, CHF: 1.081432 }; // EUR per 1 unit — ECB 2026-10-28 (frankfurter.dev)
 const FX_NOTE = "ECB 28.10.2026: 1 EUR = 1.1133 USD = 0.9247 CHF";
@@ -525,7 +527,7 @@ const ROWS = [
     tierNote:"on request, per bucket",
     egress:{ free:0, unit:"GiB", cur:"EUR", tiers:[T(INF,0.02)] },
     put:0, get:0, reqNote:"no request line item on the price list",
-    retrieval:0, minDays:0, minObj:"128 KiB · 10 TB minimum billed per bucket",
+    retrieval:0, minDays:0, minObj:"128 KiB · 10 TB per bucket, metered as 9,313 GiB",
     az:"1 zone · 3 replicas", sla:"99.85 %",
     src:"exoscale.com/object-storage/classes" },
   { id:"exo-cold", vendor:"Exoscale", brand:true, cls:"SOS Cold (early 2027)", region:"CH · DE · AT · BG · HR",
@@ -655,11 +657,17 @@ const ROWS = [
     put:0, get:0, reqNote:"API requests free", retrieval:0, minDays:0, minObj:"not published", az:"3 AZ",
     src:"ovhcloud.com/public-cloud/prices" },
   { id:"ovh-1z-std", vendor:"OVHcloud", cls:"Standard One Zone", region:"Limburg (DE) · Gravelines",
-    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.0081103)],
-    tierNote:"rate only found on the USD price page",
-    egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
+    cur:"EUR", unit:"GB?", bill:"h", tiers:[T(INF,0.00000972)],
+    tierNote:"no volume tiers on the One Zone classes",
+    egress:{ free:INF, unit:"GB?", cur:"EUR", tiers:[T(INF,0)] },
     put:0, get:0, reqNote:"API requests free", retrieval:0, minDays:0, minObj:"not published", az:"1 zone",
-    src:"ovhcloud.com/public-cloud/prices" },
+    src:"eu.api.ovh.com — public cloud catalogue, DE" },
+  { id:"ovh-1z-ia", vendor:"OVHcloud", cls:"Infrequent Access One Zone", region:"Limburg (DE) · Gravelines",
+    cur:"EUR", unit:"GB?", bill:"h", tiers:[T(INF,0.00000548)],
+    egress:{ free:INF, unit:"GB?", cur:"EUR", tiers:[T(INF,0)] },
+    put:0, get:0, reqNote:"API requests free",
+    retrieval:0.004, retrievalCur:"EUR", retrievalUnit:"GB?", minDays:30, minObj:"not published", az:"1 zone",
+    src:"eu.api.ovh.com — public cloud catalogue, DE" },
   { id:"ovh-ia", vendor:"OVHcloud", cls:"Infrequent Access Multi-AZ", region:"Paris · Milan",
     cur:"EUR", unit:"GiB", bill:"h", tiers:[T(INF,0.00001301)],
     egress:{ free:INF, unit:"GiB", cur:"EUR", tiers:[T(INF,0)] },
@@ -696,7 +704,7 @@ const ROWS = [
     retrieval:0.009, retrievalCur:"EUR", retrievalUnit:"GB?", minDays:0,
     minObj:"1 GB·hour", az:"not published", src:"scaleway.com/pricing/storage" },
   { id:"ionos", vendor:"IONOS", cls:"Object Storage", region:"Germany · Spain · USA",
-    cur:"EUR", unit:"GB?", bill:"m", tiers:[T(INF,0.007)],
+    cur:"EUR", unit:"GB?", bill:"d30", tiers:[T(INF,0.007)],
     tierNote:"⚠ DE page: €0.007/GB/30 d; US page: $0.00487/GB/30 d — a ~44 % gap FX does not explain",
     egress:{ free:2000, unit:"GB?", cur:"USD", tiers:[T(INF,0.036)], note:"tiers found on the US page only" },
     put:0, get:0, reqNote:"PUT/GET/DELETE free", retrieval:0, minDays:0, minObj:"not published",
@@ -722,7 +730,35 @@ const ROWS = [
     egress:{ free:0, unit:"GB?", cur:"EUR", tiers:null, note:"no traffic line item in the official price list" },
     put:null, get:null, reqNote:"request pricing not published",
     retrieval:0, minDays:0, minObj:"not published", az:"“distributed across several locations”, no AZ model published",
-    src:"stackit.com — price list v1.0.43 (04.08.2026)" },
+    src:"stackit.com — price list v1.0.44 (06.10.2026)" },
+  { id:"upc-os", vendor:"UpCloud", cls:"Managed Object Storage", region:"DE-FRA1 · FI-HEL2 · SE-STO1",
+    cur:"EUR", unit:"GB?", bill:"d30", tiers:[T(INF,5/250)],
+    tierNote:"sold in 250 GB steps at €5/step per 30 days (€0.0069/step·h); no volume discount",
+    egress:{ free:INF, unit:"GB?", cur:"EUR", tiers:[T(INF,0)],
+             note:"zero-cost egress, subject to UpCloud's Fair Transfer Policy" },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0, minDays:0, minObj:"not published",
+    az:"“multiple redundant storage devices”, no AZ model published",
+    src:"upcloud.com/pricing" },
+  { id:"do-spaces", vendor:"DigitalOcean", cls:"Spaces Standard", region:"fra1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.02)],
+    base:{ fee:5.00, inclUnits:250 },
+    tierNote:"$5/month subscription including 250 GiB of storage and 1,024 GiB of egress",
+    egress:{ free:1024, unit:"GiB", cur:"USD", tiers:[T(INF,0.01)],
+             note:"1,024 GiB bundled with the subscription, shared across buckets" },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0, minDays:0, minObj:"not published",
+    az:"not published", src:"docs.digitalocean.com/products/spaces/details/pricing" },
+  { id:"do-cold", vendor:"DigitalOcean", cls:"Spaces Cold Storage", region:"fra1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", tiers:[T(INF,0.007)],
+    tierNote:"no subscription of its own — the $5 and its 1,024 GiB allowance sit on the Standard row",
+    egress:{ free:1024, unit:"GiB", cur:"USD", tiers:[T(INF,0.01)],
+             note:"the same bundled allowance as Spaces Standard" },
+    put:0, get:0, reqNote:"no request line item on the price list",
+    retrieval:0.01, retrievalCur:"USD", retrievalUnit:"GiB", retrievalFree:"stored",
+    retrievalNote:"waived up to the month's average daily cold volume — nothing to pay while egress stays under the volume held",
+    minDays:30, minObj:"128 KiB · 128 KiB minimum charged per read",
+    az:"not published", src:"docs.digitalocean.com/products/spaces/details/pricing" },
   { id:"tcloud", vendor:"T Cloud Public", cls:"OBS Standard / Warm / Cold", region:"Germany (formerly Open Telekom Cloud)",
     cur:"EUR", unit:"GB?", bill:"m", tiers:null,
     tierNote:"storage price not published — calculator and console only",
@@ -735,13 +771,13 @@ const ROWS = [
 const PANELS = {
   actuel: { label:"Core set",
     sub:"Exoscale SOS against the S3-compatible providers most often shortlisted alongside it in Europe.",
-    ids:["exo-arch","exo-cold","exo-warm","exo-std","aws-std","aws-ia","aws-gir","aws-da","wasabi","hetzner","b2","infomaniak","stackit"] },
+    ids:["exo-arch","exo-cold","exo-warm","exo-std","aws-std","aws-ia","aws-gir","aws-da","wasabi","hetzner","b2","upc-os","do-spaces","infomaniak","stackit"] },
   hyper: { label:"Hyperscalers",
     sub:"AWS, Azure and Google in their Frankfurt region, every storage class, against the four SOS classes.",
     ids:["exo-arch","exo-cold","exo-warm","exo-std","aws-std","aws-ia","aws-1z","aws-gir","aws-gfr","aws-da","az-hot-zrs","az-hot-lrs","az-cool-zrs","az-cold-lrs","az-arch-lrs","gcs-std","gcs-near","gcs-cold","gcs-arch"] },
   eu: { label:"European providers",
     sub:"European and low-cost alternatives, shown against the regions each one actually operates.",
-    ids:["exo-arch","exo-cold","exo-warm","exo-std","ovh-mz-std","ovh-1z-std","ovh-ia","ovh-aa","ovh-ca","scw-mz","scw-1z","scw-gl","ionos","r2-std","r2-ia","hetzner","infomaniak","stackit","tcloud"] }
+    ids:["exo-arch","exo-cold","exo-warm","exo-std","ovh-mz-std","ovh-1z-std","ovh-ia","ovh-1z-ia","ovh-aa","ovh-ca","scw-mz","scw-1z","scw-gl","ionos","r2-std","r2-ia","hetzner","upc-os","do-spaces","do-cold","infomaniak","stackit","tcloud"] }
 };
 
 /* ---------------- calculation engine ---------------- */
@@ -750,7 +786,7 @@ const TIB = 1024; // GiB per TiB
 
 function storageCost(r, storedGiB){
   if(!r.tiers) return null;
-  const h = r.bill === "h" ? S.hours : 1;
+  const h = hf(r.bill);
   const units = storedGiB * uf(r.unit);
   if(r.base){
     const over = Math.max(0, units - r.base.inclUnits);
@@ -761,8 +797,7 @@ function storageCost(r, storedGiB){
 }
 function unitPrice(r){
   if(!r.tiers) return null;
-  const h = r.bill === "h" ? S.hours : 1;
-  return r.tiers[0].r * h * uf(r.unit) * FX[r.cur];
+  return r.tiers[0].r * hf(r.bill) * uf(r.unit) * FX[r.cur];
 }
 function freeAllowance(r, storedGiB){
   const f = r.egress.free;
@@ -784,13 +819,22 @@ function reqCost(r){
   if(r.put === null || r.get === null) return null;
   return ((S.put * 1e6 / 1000) * r.put + (S.get * 1e6 / 1000) * r.get) * FX[r.cur];
 }
-function retrievalCost(r, egressGiB){
+/* Some vendors waive the retrieval fee up to a volume that grows with the data held —
+   DigitalOcean's Cold Storage waives it up to the month's average daily volume. */
+function retrievalFree(r, storedGiB){
+  const f = r.retrievalFree;
+  if(f === undefined || f === 0) return 0;
+  if(f === "stored") return storedGiB;
+  return f / uf(r.retrievalUnit || "GiB");
+}
+function retrievalCost(r, egressGiB, storedGiB){
   if(!r.retrieval) return 0;
-  return egressGiB * r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur];
+  const billable = Math.max(0, egressGiB - retrievalFree(r, storedGiB));
+  return billable * r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur];
 }
 function scenario(r){
   const storedGiB = S.stored * TIB, egressGiB = S.egress * TIB;
-  const parts = [storageCost(r, storedGiB), egressCost(r, egressGiB, storedGiB), reqCost(r), retrievalCost(r, egressGiB)];
+  const parts = [storageCost(r, storedGiB), egressCost(r, egressGiB, storedGiB), reqCost(r), retrievalCost(r, egressGiB, storedGiB)];
   const partial = parts.some(p => p === null);
   const total = parts.reduce((a, p) => a + (p || 0), 0);
   return { total, partial, hasPrice: r.tiers !== null };
@@ -799,12 +843,15 @@ function scenario(r){
 /* ---------------- formatting ---------------- */
 const UNKNOWN_UNIT = u => u === "GB?";
 
+/* Rates derived from a per-TB figure carry binary float dust; 12 places clears it while
+   keeping every digit STACKIT and Scaleway actually publish. */
+const rate12 = v => String(Number(v.toFixed(12)));
 function publishedRate(r){
   if(!r.tiers) return '<span class="np">not published</span>';
   const u = r.unit === "GiB" ? "GiB" : "GB";
-  return r.base
-    ? "€" + r.base.fee.toFixed(2) + "/mo + €" + r.tiers[0].r.toFixed(7) + "/" + u + "·h"
-    : r.tiers[0].r + " " + sym(r.cur) + "/" + u + (r.bill === "h" ? "·h" : "-month");
+  const per = r.bill === "h" ? "·h" : r.bill === "d30" ? "/30 d" : "-month";
+  const rate = rate12(r.tiers[0].r) + " " + sym(r.cur) + "/" + u + per;
+  return r.base ? sym(r.cur) + r.base.fee.toFixed(2) + "/mo + " + rate : rate;
 }
 function egressCell(r){
   if(!r.egress.tiers) return '<span class="np">not published</span>';

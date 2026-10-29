@@ -8,8 +8,8 @@ comparison as a single dependency-free HTML page with an adjustable total-cost s
 
 | Benchmark | Covers | Rows | Observed |
 |---|---|---|---|
-| [**Object storage**](object-storage/) | S3-compatible buckets, from AWS S3 Standard to Glacier Deep Archive | 36 vendor × class | 2026-09-07 |
-| [**Block storage**](block-storage/) | EBS-shaped volumes — attachable, resizable, snapshottable | 37 vendor × class | 2026-09-10 |
+| [**Object storage**](object-storage/) | S3-compatible buckets, from AWS S3 Standard to Glacier Deep Archive | 40 vendor × class | 2026-10-29 |
+| [**Block storage**](block-storage/) | EBS-shaped volumes — attachable, resizable, snapshottable | 41 vendor × class | 2026-10-29 |
 | [**File storage**](file-storage/) | Managed shared file systems — the AWS EFS shape, mounted by several instances at once | 31 vendor × class | 2026-10-29 |
 
 Published readings: **https://retrack.github.io/eu-cloud-computing-price-benchmarks/**
@@ -25,12 +25,12 @@ Three things differ between vendors and quietly move the figure by 10 % or more:
 
 1. **The unit.** AWS, Azure, Google, Exoscale and Wasabi bill in binary units
    (1 GB = 2³⁰ bytes) while printing "GB". Hetzner, Backblaze, Scaleway, IONOS, Cloudflare,
-   Infomaniak and STACKIT state no basis at all. Decimal versus binary is a 7.4 % difference
-   on the same physical bytes. OVHcloud prints `GiB` for object storage and `GB` for block
-   storage, defining neither.
+   Infomaniak, UpCloud and STACKIT state no basis at all. Decimal versus binary is a 7.4 %
+   difference on the same physical bytes. OVHcloud prints `GiB` for its multi-AZ object
+   classes and `GB` for block storage and the One Zone classes, defining neither.
 2. **The month.** Vendors that bill hourly extrapolate to a month using 720, 730 or 744 hours
    depending on who is doing the extrapolating — a 3 % spread on its own. IONOS and STACKIT
-   publish a 30-day month; OVHcloud publishes a 730-hour one.
+   publish a 30-day month, as do UpCloud and DigitalOcean; OVHcloud publishes a 730-hour one.
 3. **What the headline excludes.** For object storage: egress, requests, retrieval fees,
    minimum durations and minimum billable object sizes. For block storage: provisioned IOPS,
    provisioned throughput and snapshots — which at AWS io2 can cost four times the capacity

@@ -100,19 +100,21 @@ vendor actually operates**.
 
 Most vendors render prices client-side, so a plain HTML fetch returns empty placeholders.
 Read the rendered DOM with the region selected, or go straight to the feed the page consumes.
-The feeds that worked on 10 September 2026:
+The feeds that worked on 29 October 2026:
 
 | Vendor | Feed |
 |---|---|
-| AWS | Price List Bulk API: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/eu-central-1/index.csv` (280 MB — stream it through `grep`). File storage is the same API with the `AmazonEFS` offer code and is only a few kB. Object storage: `https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/*.json`, key `regions["EU (Frankfurt)"]` |
+| AWS | Price List Bulk API: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/eu-central-1/index.csv` (280 MB — stream it through `grep`). File storage is the same API with the `AmazonEFS` offer code and is only a few kB. Object storage: `https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/s3.json`, and EBS at `.../ec2/USD/current/ebs-calculator.json`, both keyed `regions["EU (Frankfurt)"]`. Both are served gzipped — fetch with `curl --compressed` or the JSON will not parse. Egress tiers are in the `AWSDataTransfer` bulk CSV, usage type `EUC1-DataTransfer-Out-Bytes` |
 | Azure | Retail Prices API, `https://prices.azure.com/api/retail/prices?currencyCode=USD&$filter=armRegionName eq 'germanywestcentral' and priceType eq 'Consumption' and productName eq '<product>'` |
 | Google | the pricing tables are serialised inside the HTML of `cloud.google.com/compute/disks-image-pricing` and `cloud.google.com/filestore/pricing`; split on the `"Frankfurt (europe-west3)",[2]` marker to get the monthly table. Filestore capacity floors come from `cloud.google.com/filestore/docs/service-tiers`, not from the price page |
-| OVHcloud | `https://eu.api.ovh.com/v1/order/catalog/public/cloud?ovhSubsidiary=DE` — `addons[].planCode` matching `volume`/`snapshot`/`share`, prices in units of 1e-8 EUR, net of the `taxRate` in `locale` |
+| OVHcloud | `https://eu.api.ovh.com/v1/order/catalog/public/cloud?ovhSubsidiary=DE` — `addons[].planCode` matching `volume`/`snapshot`/`share` for block and file, `storage-*` for the object classes, `retrieval_*` and `deep-archive-restore*` for retrieval fees and `bandwidth_storage-*` for egress. Prices are in units of 1e-8 EUR, net of the `taxRate` in `locale`. The `-3AZ` suffix is the multi-AZ variant; the bare plan code is the one-zone one |
 | Exoscale | `https://portal.exoscale.com/api/pricing/<product>` — the endpoint the price page's Angular controller calls. `blockstorage`, `sos`, and so on |
-| Hetzner | object storage: `website-price-api.hetzner.com`. Block storage: the price is an attribute on the `<ho-block-storage-calculator>` element of `hetzner.com/cloud/block-storage/`, and only appears when the page is fetched with a European locale |
-| STACKIT | the price list PDF linked from `stackit.com/en/prices` — run it through `pdftotext -layout` |
+| Hetzner | `website-price-api.hetzner.com` now 404s. Object storage: the base fee, the per-TB-hour overage and the egress rate are in the prose and the `sliderData` attribute of the `<ho-storage-calculator>` element on `hetzner.com/storage/object-storage/`. Block storage: the `eurprice` attribute on the `<ho-block-storage-calculator>` element of `hetzner.com/cloud/block-storage/`. Both only appear when the page is fetched with a European locale |
+| STACKIT | the price list PDF linked from `stackit.com/en/prices` — take the href from the rendered page, then fetch it **with a `Referer` of the prices page**, or the server silently returns the prices page HTML instead of the PDF. Run it through `pdftotext -layout`. The EU01 rows are Germany South; ignore the `-m` duplicates |
 | Scaleway | the price pages now answer a plain fetch with a bot challenge; read the rendered DOM, and open the per-product “Legal notice” before trusting a unit |
 | IONOS | `cloud.ionos.de/preise` renders server-side; the German page carries line items the English one does not |
+| UpCloud | `upcloud.com/pricing` renders server-side and carries every storage product in one page; the per-class performance figures are on `upcloud.com/products/block-storage/` and the regions on `upcloud.com/data-centres/`. A plain `curl` is refused — read the rendered DOM |
+| DigitalOcean | the price pages are thin; the authoritative figures are in the docs: `docs.digitalocean.com/products/spaces/details/pricing/`, `docs.digitalocean.com/products/volumes/details/limits/`, and `docs.digitalocean.com/platform/regional-availability/` for which products reach `fra1` and which stop at `ams3` |
 
 Anything you cannot confirm is `null` or `"not published"` — never an estimate. The pages
 render those as `not published` and mark the scenario cost with `≥`.

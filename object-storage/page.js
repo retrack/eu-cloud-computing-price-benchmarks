@@ -4,7 +4,7 @@ const TIB = 1024; // GiB per TiB
 
 function storageCost(r, storedGiB){
   if(!r.tiers) return null;
-  const h = r.bill === "h" ? S.hours : 1;
+  const h = hf(r.bill);
   const units = storedGiB * uf(r.unit);
   if(r.base){
     const over = Math.max(0, units - r.base.inclUnits);
@@ -15,8 +15,7 @@ function storageCost(r, storedGiB){
 }
 function unitPrice(r){
   if(!r.tiers) return null;
-  const h = r.bill === "h" ? S.hours : 1;
-  return r.tiers[0].r * h * uf(r.unit) * FX[r.cur];
+  return r.tiers[0].r * hf(r.bill) * uf(r.unit) * FX[r.cur];
 }
 function freeAllowance(r, storedGiB){
   const f = r.egress.free;
@@ -38,13 +37,22 @@ function reqCost(r){
   if(r.put === null || r.get === null) return null;
   return ((S.put * 1e6 / 1000) * r.put + (S.get * 1e6 / 1000) * r.get) * FX[r.cur];
 }
-function retrievalCost(r, egressGiB){
+/* Some vendors waive the retrieval fee up to a volume that grows with the data held —
+   DigitalOcean's Cold Storage waives it up to the month's average daily volume. */
+function retrievalFree(r, storedGiB){
+  const f = r.retrievalFree;
+  if(f === undefined || f === 0) return 0;
+  if(f === "stored") return storedGiB;
+  return f / uf(r.retrievalUnit || "GiB");
+}
+function retrievalCost(r, egressGiB, storedGiB){
   if(!r.retrieval) return 0;
-  return egressGiB * r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur];
+  const billable = Math.max(0, egressGiB - retrievalFree(r, storedGiB));
+  return billable * r.retrieval * uf(r.retrievalUnit || "GiB") * FX[r.retrievalCur || r.cur];
 }
 function scenario(r){
   const storedGiB = S.stored * TIB, egressGiB = S.egress * TIB;
-  const parts = [storageCost(r, storedGiB), egressCost(r, egressGiB, storedGiB), reqCost(r), retrievalCost(r, egressGiB)];
+  const parts = [storageCost(r, storedGiB), egressCost(r, egressGiB, storedGiB), reqCost(r), retrievalCost(r, egressGiB, storedGiB)];
   const partial = parts.some(p => p === null);
   const total = parts.reduce((a, p) => a + (p || 0), 0);
   return { total, partial, hasPrice: r.tiers !== null };
@@ -53,12 +61,15 @@ function scenario(r){
 /* ---------------- formatting ---------------- */
 const UNKNOWN_UNIT = u => u === "GB?";
 
+/* Rates derived from a per-TB figure carry binary float dust; 12 places clears it while
+   keeping every digit STACKIT and Scaleway actually publish. */
+const rate12 = v => String(Number(v.toFixed(12)));
 function publishedRate(r){
   if(!r.tiers) return '<span class="np">not published</span>';
   const u = r.unit === "GiB" ? "GiB" : "GB";
-  return r.base
-    ? "€" + r.base.fee.toFixed(2) + "/mo + €" + r.tiers[0].r.toFixed(7) + "/" + u + "·h"
-    : r.tiers[0].r + " " + sym(r.cur) + "/" + u + (r.bill === "h" ? "·h" : "-month");
+  const per = r.bill === "h" ? "·h" : r.bill === "d30" ? "/30 d" : "-month";
+  const rate = rate12(r.tiers[0].r) + " " + sym(r.cur) + "/" + u + per;
+  return r.base ? sym(r.cur) + r.base.fee.toFixed(2) + "/mo + " + rate : rate;
 }
 function egressCell(r){
   if(!r.egress.tiers) return '<span class="np">not published</span>';

@@ -2,9 +2,9 @@
 
 EBS-shaped block volumes — attachable, resizable, snapshottable — normalised to **euros per
 provisioned GiB per month on a 730-hour basis**, Frankfurt region or the closest each vendor
-operates. 37 vendor × class rows.
+operates. 41 vendor × class rows across 13 vendors.
 
-Open [`index.html`](index.html). Prices observed **10 September 2026**.
+Open [`index.html`](index.html). Prices observed **29 October 2026**.
 
 ## What the page does
 
@@ -57,6 +57,8 @@ Three behaviours are specific to this page:
   monetised; those rows are marked `+io`.
 - A row whose published ceiling cannot meet the scenario is costed at the most the vendor does
   offer, rather than dropped.
+- Vendors that quote a 30-day month (IONOS, UpCloud) carry `bill:"d30"` and are rescaled by
+  `hours / 720`.
 
 ## Known gaps and contradictions
 
@@ -69,6 +71,9 @@ Three behaviours are specific to this page:
 | Hetzner snapshots | none offered for volumes, so the row carries no snapshot cost. That is a missing capability, not a discount. |
 | Redundancy model | not published for block storage by Scaleway, IONOS or STACKIT |
 | Storage medium | STACKIT states none, on the product page or in the price list |
+| UpCloud | IOPS published as separate read and write figures at a 4 KiB block size; the ceiling column uses the read figure and the note carries both. No MB/s figure for any of the three classes, and no redundancy or AZ model — only "a dedicated storage backend, separate from the compute hosts". The Archive class names no medium. |
+| UpCloud price change | Standard and Archive change price on **16 November 2026**, announced on the price list but not yet quoted. The rates here are the ones published on the reading date, and both rows say so. Helsinki already pays €0.100 for Archive against €0.056 everywhere else. |
+| DigitalOcean Volumes | one flat rate in every datacentre, with no IOPS or throughput line item: performance depends on the Droplet the volume is attached to (7,500 IOPS / 300 MB/s shared, 10,000 / 450 dedicated). The ceiling column uses the dedicated figures, which are the most the volume will deliver, and the performance column shows the shared ones. |
 | Wasabi, Backblaze, Cloudflare | no block storage product; absent by design |
 
 ## Rebuilding

@@ -1,4 +1,4 @@
-// Block storage price dataset — observed 2026-09-10 from official vendor pages and price feeds.
+// Block storage price dataset — observed 2026-10-29 from official vendor pages and price feeds.
 // Capacity rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
 const FX = { EUR: 1, USD: 0.898230, CHF: 1.081432 }; // EUR per 1 unit — ECB 2026-10-28 (frankfurter.dev)
 const FX_NOTE = "ECB 28.10.2026: 1 EUR = 1.1133 USD = 0.9247 CHF";
@@ -382,7 +382,54 @@ const ROWS = [
     max:{ iops:60000, mbs:1500, size:null }, minSize:null,
     snap:{ rate:0.00002342292, cur:"EUR", unit:"GB?", bill:"h" },
     az:"“distributed across several locations”, no AZ model published",
-    src:"stackit.com — price list v1.0.43 (04.08.2026)" },
+    src:"stackit.com — price list v1.0.44 (06.10.2026)" },
+
+  /* ---------------- UPCLOUD ---------------- */
+  { id:"upc-maxiops", vendor:"UpCloud", cls:"MaxIOPS", region:"DE-FRA1 · all UpCloud locations",
+    media:"premium", medium:"enterprise-grade SSDs",
+    cur:"EUR", unit:"GB?", bill:"d30", rate:0.220,
+    rateNote:"€0.220 per GB per 30 days — UpCloud prices a 720-hour month, billed hourly",
+    iops:null, tput:null,
+    perf:{ iops:100000, mbs:null,
+           iopsNote:"100,000 read and 30,000 write IOPS at a 4 KiB block size, whatever the volume size; no MB/s figure published" },
+    max:{ iops:100000, mbs:null, size:4096 }, minSize:1,
+    snap:{ rate:0.056, cur:"EUR", unit:"GB?", bill:"d30",
+           note:"flexible and on-demand backups; the Simple Backup day/week/month/year plans are priced separately" },
+    az:"dedicated storage backend, separate from the compute hosts; no AZ model published",
+    src:"upcloud.com/pricing" },
+  { id:"upc-std", vendor:"UpCloud", cls:"Standard", region:"DE-FRA1 · all UpCloud locations",
+    media:"ssd", medium:"standard performance SSD storage",
+    cur:"EUR", unit:"GB?", bill:"d30", rate:0.085,
+    rateNote:"⚠ UpCloud has announced a new Standard price from 16 November 2026; this is the rate published today",
+    iops:null, tput:null,
+    perf:{ iops:10000, mbs:null, iopsNote:"10,000 read and 10,000 write IOPS at a 4 KiB block size" },
+    max:{ iops:10000, mbs:null, size:4096 }, minSize:1,
+    snap:{ rate:0.056, cur:"EUR", unit:"GB?", bill:"d30" },
+    az:"dedicated storage backend, separate from the compute hosts; no AZ model published",
+    src:"upcloud.com/pricing" },
+  { id:"upc-arch", vendor:"UpCloud", cls:"Archive", region:"DE-FRA1 · all UpCloud locations",
+    media:"?", medium:"not published",
+    cur:"EUR", unit:"GB?", bill:"d30", rate:0.056,
+    rateNote:"⚠ UpCloud has announced a new Archive price from 16 November 2026; Helsinki already pays €0.100",
+    iops:null, tput:null,
+    perf:{ iops:600, mbs:null, iopsNote:"600 read and 600 write IOPS at a 4 KiB block size" },
+    max:{ iops:600, mbs:null, size:4096 }, minSize:1,
+    snap:{ rate:0.056, cur:"EUR", unit:"GB?", bill:"d30" },
+    az:"dedicated storage backend, separate from the compute hosts; no AZ model published",
+    src:"upcloud.com/pricing" },
+
+  /* ---------------- DIGITALOCEAN ---------------- */
+  { id:"do-vol", vendor:"DigitalOcean", cls:"Volumes", region:"fra1 · Frankfurt",
+    media:"ssd", medium:"SSD-backed storage",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.10,
+    rateNote:"one class, one flat rate in every datacentre — $10 per 100 GiB-month",
+    iops:null, tput:null,
+    perf:{ iops:7500, mbs:300,
+           iopsNote:"7,500 IOPS and 300 MB/s on a shared-CPU Droplet; 10,000 and 450 MB/s on a dedicated one, with 60-second bursts to 10,000/450 and 15,000/525" },
+    max:{ iops:10000, mbs:450, size:16384 }, minSize:1,
+    snap:{ rate:0.06, cur:"USD", unit:"GiB", bill:"m", note:"volume snapshots, billed on the restorable size" },
+    az:"Ceph · replicated across several hosts in one datacentre",
+    src:"digitalocean.com/pricing/volumes" },
 
   /* ---------------- T CLOUD PUBLIC ---------------- */
   { id:"tcloud", vendor:"T Cloud Public", cls:"Elastic Volume Service", region:"Germany (formerly Open Telekom Cloud)",
@@ -399,7 +446,7 @@ const ROWS = [
 const PANELS = {
   actuel: { label:"Core set",
     sub:"Exoscale Block Storage against the volumes most often shortlisted alongside it in Europe.",
-    ids:["exo-bs","aws-gp3","aws-io2","az-pv2","g-hd-bal","ovh-hs2","scw-5k","het-vol","ion-bal","inf-p3","stackit"] },
+    ids:["exo-bs","aws-gp3","aws-io2","az-pv2","g-hd-bal","ovh-hs2","scw-5k","het-vol","ion-bal","upc-maxiops","do-vol","inf-p3","stackit"] },
   hyper: { label:"Hyperscalers",
     sub:"AWS, Azure and Google in their Frankfurt-region equivalents, every volume type, against Exoscale.",
     ids:["exo-bs","aws-gp3","aws-gp2","aws-io2","aws-io1","aws-st1","aws-sc1","aws-mag",
@@ -408,5 +455,6 @@ const PANELS = {
   eu: { label:"European providers",
     sub:"European alternatives, shown against the regions and redundancy models each one actually operates.",
     ids:["exo-bs","ovh-rc","ovh-classic","ovh-hs","ovh-hs2","scw-5k","scw-15k","het-vol",
-         "ion-ess","ion-bal","ion-perf","inf-p1","inf-p2","inf-p3","stackit","tcloud"] }
+         "ion-ess","ion-bal","ion-perf","upc-maxiops","upc-std","upc-arch","do-vol",
+         "inf-p1","inf-p2","inf-p3","stackit","tcloud"] }
 };
