@@ -3,7 +3,7 @@
 This branch is the published site. It carries **no source**: the datasets, the templates and the
 build tooling live on `main`. Everything here is generated output plus the index that lists it.
 
-https://retrack.github.io/eu-object-storage-benchmark/
+https://retrack.github.io/eu-cloud-computing-price-benchmarks/
 
 Three independent series are published: **object storage**, priced on the data you store,
 **block storage**, priced on the capacity you provision, and **file storage**, priced on the data
@@ -66,15 +66,18 @@ run them from the `main` worktree.
 ### Object storage `prices`
 
 One normalised storage unit price per dataset row id, at 730 h/month, decimal unit assumption,
-excluding VAT.
+excluding VAT. This is the page's own `unitPrice()`, so for the two vendors that bundle a base fee
+(Hetzner, DigitalOcean Spaces Standard) it is the **marginal** rate — what the next gigabyte costs
+once the bundle is used up — exactly as the page's chart and `€/GiB-month` column show it.
 
 ```bash
 node -e '
   const fs=require("fs");
-  const {ROWS,PANELS,FX,GIB}=new Function(fs.readFileSync("data.js","utf8")+"\nreturn {ROWS,PANELS,FX,GIB};")();
+  const {ROWS,PANELS,FX,GIB}=new Function(fs.readFileSync("object-storage/data.js","utf8")+"\nreturn {ROWS,PANELS,FX,GIB};")();
   const uf=u=>u==="GiB"?1:GIB;                      // "GB" and unstated both follow the decimal default
+  const hf=b=>b==="h"?730:b==="d30"?730/720:1;      // IONOS and UpCloud quote a 30-day month
   const p={};
-  for(const r of ROWS) p[r.id]=r.tiers ? Number((r.tiers[0].r*(r.bill==="h"?730:1)*uf(r.unit)*FX[r.cur]).toFixed(6)) : null;
+  for(const r of ROWS) p[r.id]=r.tiers ? Number((r.tiers[0].r*hf(r.bill)*uf(r.unit)*FX[r.cur]).toFixed(6)) : null;
   console.log(JSON.stringify(p,null,1));
 '
 ```
@@ -91,7 +94,7 @@ them, or the history stops being one series.
 ```bash
 node -e '
   const fs=require("fs");
-  const {ROWS,FX}=new Function(fs.readFileSync("block-data.js","utf8")+"\nreturn {ROWS,FX};")();
+  const {ROWS,FX}=new Function(fs.readFileSync("block-storage/data.js","utf8")+"\nreturn {ROWS,FX};")();
   const S={gib:2048,vols:4,iops:3000,mbs:125,snap:1024,hours:730};   // page defaults
   const GIB=1.073741824, uf=u=>u==="GiB"?1:GIB, hf=b=>b==="h"?S.hours:b==="d30"?S.hours/720:1;
   const perVol=()=>S.gib/S.vols;
