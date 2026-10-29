@@ -225,7 +225,7 @@ footer p{margin:0 0 8px}
   <div class="run-meta">
     <span>10 vendors · <b>31 file system classes</b></span>
     <span>FX <b>ECB 28.10.2026</b></span>
-    <span>commit <b>cf0afab</b></span>
+    <span>commit <b>9b2eca0</b></span>
   </div>
   <p class="run-note">
     First published file storage reading — managed shared file systems in the AWS EFS shape, mounted over NFS or
@@ -233,6 +233,15 @@ footer p{margin:0 0 8px}
     plus per-GiB read and write charges. Capacity floors are modelled, so a vendor that will not sell a share below
     2.5 TiB is priced on what it would actually invoice rather than on its headline rate. Exoscale has no file
     storage product, so this is the one reading with no Exoscale row.
+  </p>
+  <p class="run-note">
+    <b>Revised on the same date</b>, without re-reading a single price: each vendor's published limits were read
+    from its documentation and added as a column — the capacity range it sells and the performance ceiling for one
+    share, resolved at the size being billed, because OVHcloud, Scaleway, Google and DigitalOcean all sell the
+    ceiling with the gigabytes. Two figures in this reading changed as a result. Google Filestore Basic HDD
+    publishes 600 read IOPS between 1 and 10 TiB, so it cannot deliver the 3,000 the scenario asks for and is now
+    marked ⚠. STACKIT sells capacity as a 500 GB to 20 TB resource pool, a floor that was recorded as not
+    published, so shares below it were priced far too low. Every scenario total is unchanged.
   </p>
   <span class="run-open">Open the reading →</span>
 </a>
@@ -279,7 +288,9 @@ footer p{margin:0 0 8px}
     also carries a performance ceiling, so a cheap row is not a substitute for an expensive one unless it
     can serve the workload — the block pages mark the rows that cannot. File storage adds a third trap: several
     vendors will not sell a share below a minimum size, so asking for less does not make the row cheaper, it
-    makes the price per gigabyte worse.
+    makes the price per gigabyte worse. Its ceilings are rarely flat numbers either — most vendors sell the IOPS
+    and the throughput with the gigabytes — so the file storage page states each limit at the size being billed
+    rather than quoting a maximum reached only at 100 TiB.
   </p>
 </div>
 

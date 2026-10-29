@@ -132,6 +132,11 @@ vendors will not sell a share below a minimum, so `billedGiB` can exceed the dat
 price figures still divide by the data held — that is deliberate, and it is how a capacity floor
 shows up as a worse price per gigabyte instead of vanishing into the denominator.
 
+`short` resolves each vendor's published ceiling against the capacity being billed, because most
+of them are not flat numbers: OVHcloud and Scaleway sell performance with the gigabytes, Google
+quotes its scalable tiers per TiB, and Google Basic HDD publishes a different figure above 10 TiB.
+The capacity ceiling is `maxGiB`, not `max.size`, which no longer exists.
+
 ```bash
 node -e '
   const fs=require("fs");
@@ -148,7 +153,14 @@ node -e '
   const perf=(s,t,r)=>!s?0:Math.max(t-incl(s,r), s.min||0, 0)*s.rate*hf(s.per)*FX[r.cur];
   const acc=r=>{ if(!r.access) return 0; const f=uf(r.access.unit);
     return (S.read*f*r.access.read + S.written*f*r.access.write)*FX[r.access.cur||r.cur]; };
-  const short=r=>(r.max.iops!=null&&S.iops>r.max.iops)||(r.max.mbs!=null&&S.mbs>r.max.mbs)||(r.max.size!=null&&S.stored>r.max.size);
+  const ceil=(s,g)=>{ if(s==null) return null;                              // a published ceiling is a
+    if(typeof s==="number") return s;                                       // number, a ladder of bands,
+    if(Array.isArray(s)) return ceil((s.find(b=>g<=b.upTo)||s[s.length-1]).v, g);
+    const o=Math.max(0,g-(s.from||0));                                      // or one bought with capacity
+    const v=(s.base||0)+(s.perGiB||0)*o+(s.perTiB||0)*o/1024;
+    return s.cap!=null?Math.min(v,s.cap):v; };
+  const short=r=>{ const g=billed(r), i=ceil(r.max.iops,g), m=ceil(r.max.mbs,g);
+    return (i!=null&&S.iops>i)||(m!=null&&S.mbs>m)||(r.maxGiB!=null&&S.stored>r.maxGiB); };
   const n=v=>v===null?null:Number((v/S.stored).toFixed(6));
   const p={};
   for(const r of ROWS){ const c=cap(r), parts=[c,perf(r.iops,S.iops,r),perf(r.tput,S.mbs,r),acc(r)];
