@@ -121,12 +121,15 @@ footer p{margin:0 0 8px}
   <p class="standfirst">
     Cloud storage list prices from the vendors' own pricing pages, normalised so the numbers are
     actually comparable: one hour basis, one unit, one currency — <b>euros per GiB per month, 730 hours</b>,
-    Frankfurt or the closest region each vendor operates. Two series, read separately:
-    <b>object storage</b> priced on the data you store, <b>block storage</b> priced on the capacity you provision.
+    Frankfurt or the closest region each vendor operates. Three series, read separately:
+    <b>object storage</b> priced on the data you store, <b>block storage</b> priced on the capacity you provision,
+    and <b>file storage</b> — shared file systems several machines mount at once — where the floor a vendor will
+    sell you often matters more than the rate.
   </p>
   <div class="stamp">
     <span>Object storage <b>7 September 2026</b></span>
     <span>Block storage <b>10 September 2026</b></span>
+    <span>File storage <b>29 October 2026</b></span>
     <span><a href="https://github.com/retrack/eu-object-storage-benchmark">Source repository</a></span>
   </div>
 </header>
@@ -173,6 +176,28 @@ footer p{margin:0 0 8px}
   <span class="run-open">Open the reading →</span>
 </a>
 
+<h2 class="section-title">File storage runs</h2>
+
+<a class="run" href="runs/file/2026-10-29/">
+  <div class="run-head">
+    <span class="run-date">2026-10-29</span>
+    <span class="tag">Latest</span>
+  </div>
+  <div class="run-meta">
+    <span>10 vendors · <b>31 file system classes</b></span>
+    <span>FX <b>ECB 28.10.2026</b></span>
+    <span>commit <b>cf0afab</b></span>
+  </div>
+  <p class="run-note">
+    First published file storage reading — managed shared file systems in the AWS EFS shape, mounted over NFS or
+    SMB by several instances at once. Ranked on the effective price: capacity plus provisioned IOPS and throughput
+    plus per-GiB read and write charges. Capacity floors are modelled, so a vendor that will not sell a share below
+    2.5 TiB is priced on what it would actually invoice rather than on its headline rate. Exoscale has no file
+    storage product, so this is the one reading with no Exoscale row.
+  </p>
+  <span class="run-open">Open the reading →</span>
+</a>
+
 <h2 class="section-title">Trend</h2>
 
 <div class="card soft">
@@ -181,8 +206,9 @@ footer p{margin:0 0 8px}
     A dashboard tracking how these prices move goes here once there are enough readings to draw a line
     through. Each run's normalised prices are already recorded per vendor row in
     <a href="runs.json">runs.json</a>, so the history is being accumulated from the first run onward.
-    The two series are kept apart in that file: a euro per GiB of data <i>stored</i> and a euro per GiB of
-    capacity <i>provisioned</i> are different quantities and must never share an axis.
+    The three series are kept apart in that file: a euro per GiB of data <i>stored</i>, a euro per GiB of
+    capacity <i>provisioned</i> and a euro per GiB <i>held on a shared file system</i> are different quantities
+    and must never share an axis.
   </p>
 </div>
 
@@ -209,10 +235,12 @@ footer p{margin:0 0 8px}
     total containing one is prefixed <code>≥</code> rather than silently treated as zero.
   </p>
   <p>
-    The two series answer different questions and their numbers do not compare. Object storage bills the
+    The three series answer different questions and their numbers do not compare. Object storage bills the
     bytes you actually hold; block storage bills the size of the volume, empty or full. A block volume
     also carries a performance ceiling, so a cheap row is not a substitute for an expensive one unless it
-    can serve the workload — the block pages mark the rows that cannot.
+    can serve the workload — the block pages mark the rows that cannot. File storage adds a third trap: several
+    vendors will not sell a share below a minimum size, so asking for less does not make the row cheaper, it
+    makes the price per gigabyte worse.
   </p>
 </div>
 

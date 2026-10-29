@@ -1,5 +1,5 @@
 {
- "note": "Machine-readable index of published benchmark runs. Two independent series: `object` (price per GiB of data stored) and `block` (price per GiB of capacity provisioned). The two are not comparable and must never share an axis.",
+ "note": "Machine-readable index of published benchmark runs. Three independent series: `object` (price per GiB of data stored), `block` (price per GiB of capacity provisioned) and `file` (price per GiB of data held on a shared file system, which several vendors bill as provisioned capacity with a floor). The three are not comparable and must never share an axis.",
  "series": {
   "object": {
    "label": "Object storage",
@@ -351,6 +351,316 @@
         "ssd",
         "premium"
        ]
+      }
+     }
+    }
+   ]
+  },
+  "file": {
+   "label": "File storage",
+   "basis": {
+    "hours": 730,
+    "unit": "EUR/GiB-month",
+    "unit_assumption": "decimal",
+    "vat": "excluding",
+    "scenario": {
+     "data_held_gib": 2048,
+     "read_gib": 1024,
+     "written_gib": 256,
+     "iops": 3000,
+     "mbs": 100
+    },
+    "note": "Priced per GiB of data held. Vendors that bill provisioned capacity are charged max(held, their minimum), so `billedGiB` can exceed the data held; both price figures still divide by the 2048 GiB asked for."
+   },
+   "prices": "`prices` holds per dataset row id: `capacity` (the capacity line alone) and `effective` (capacity plus provisioned IOPS and throughput plus per-GiB read and write charges), both EUR per GiB *held* at the basis above; `billedGiB` and `billedOn` show what the vendor actually charges for; `floor` marks a row whose minimum exceeds the scenario; `short` a row whose published ceiling cannot deliver it; `partial` a row with an unpublished or unmonetisable component.",
+   "runs": [
+    {
+     "date": "2026-10-29",
+     "path": "runs/file/2026-10-29/",
+     "commit": "cf0afab",
+     "observed": "2026-10-29",
+     "fx": "ECB 28.10.2026: 1 EUR = 1.1133 USD = 0.9247 CHF",
+     "rows": 31,
+     "vendors": 10,
+     "prices": {
+      "efs-std": {
+       "capacity": 0.323363,
+       "effective": 0.349187,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "efs-prov": {
+       "capacity": 0.323363,
+       "effective": 0.323363,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "efs-ia": {
+       "capacity": 0.023893,
+       "effective": 0.056454,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "efs-arch": {
+       "capacity": 0.008982,
+       "effective": 0.055017,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "efs-1z": {
+       "capacity": 0.17246,
+       "effective": 0.198284,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "efs-1z-ia": {
+       "capacity": 0.012755,
+       "effective": 0.045316,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-ssd-lrs": {
+       "capacity": 0.128519,
+       "effective": 0.181891,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-ssd-zrs": {
+       "capacity": 0.160648,
+       "effective": 0.227148,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-hdd-lrs": {
+       "capacity": 0.008524,
+       "effective": 0.081107,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-hdd-zrs": {
+       "capacity": 0.010491,
+       "effective": 0.100235,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-prem-lrs": {
+       "capacity": 0.17246,
+       "effective": 0.17246,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "azf-txn-lrs": {
+       "capacity": 0.05565,
+       "effective": 0.05565,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": true,
+       "short": false
+      },
+      "azf-hot-lrs": {
+       "capacity": 0.026137,
+       "effective": 0.026137,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": true,
+       "short": false
+      },
+      "azf-cool-lrs": {
+       "capacity": 0.014467,
+       "effective": 0.019289,
+       "billedGiB": 2048,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": true,
+       "short": false
+      },
+      "gfs-basic-hdd": {
+       "capacity": 0.170664,
+       "effective": 0.170664,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "gfs-basic-ssd": {
+       "capacity": 0.404203,
+       "effective": 0.404203,
+       "billedGiB": 2560,
+       "billedOn": "provisioned",
+       "floor": true,
+       "partial": false,
+       "short": false
+      },
+      "gfs-zonal": {
+       "capacity": 0.269469,
+       "effective": 0.269469,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "gfs-zonal-cp": {
+       "capacity": 0.139871,
+       "effective": 0.162766,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "gfs-regional": {
+       "capacity": 0.485044,
+       "effective": 0.485044,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "gfs-regional-cp": {
+       "capacity": 0.247406,
+       "effective": 0.290037,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "gfs-ent": {
+       "capacity": 0.485044,
+       "effective": 0.485044,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "ovh-fs": {
+       "capacity": 0.152063,
+       "effective": 0.152063,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "scw-fs": {
+       "capacity": 0.173227,
+       "effective": 0.173227,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "ion-nfs": {
+       "capacity": 0.167653,
+       "effective": 0.167653,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "st-std": {
+       "capacity": 0.244052,
+       "effective": 0.244052,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "st-prem": {
+       "capacity": 0.396203,
+       "effective": 0.396203,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "st-ultra": {
+       "capacity": 0.703612,
+       "effective": 0.703612,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "upc-fs": {
+       "capacity": 0.152083,
+       "effective": 0.152083,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "do-nfs-std": {
+       "capacity": 0.134734,
+       "effective": 0.134734,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "do-nfs-hp": {
+       "capacity": 0.269469,
+       "effective": 0.269469,
+       "billedGiB": 2048,
+       "billedOn": "provisioned",
+       "floor": false,
+       "partial": false,
+       "short": false
+      },
+      "tc-sfs": {
+       "capacity": null,
+       "effective": null,
+       "billedGiB": null,
+       "billedOn": "stored",
+       "floor": false,
+       "partial": true,
+       "short": false
       }
      }
     }

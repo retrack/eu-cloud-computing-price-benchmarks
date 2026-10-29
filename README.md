@@ -5,9 +5,10 @@ build tooling live on `main`. Everything here is generated output plus the index
 
 https://retrack.github.io/eu-object-storage-benchmark/
 
-Two independent series are published: **object storage**, priced on the data you store, and
-**block storage**, priced on the capacity you provision. They are not comparable and must never
-share an axis.
+Three independent series are published: **object storage**, priced on the data you store,
+**block storage**, priced on the capacity you provision, and **file storage**, priced on the data
+you hold on a shared file system — which several vendors bill as provisioned capacity with a
+floor. They are not comparable and must never share an axis.
 
 ## Layout
 
@@ -16,6 +17,7 @@ share an axis.
 | `index.html` | landing page — the run listings, hand-edited |
 | `runs/<YYYY-MM-DD>/index.html` | one published **object storage** reading |
 | `runs/block/<YYYY-MM-DD>/index.html` | one published **block storage** reading |
+| `runs/file/<YYYY-MM-DD>/index.html` | one published **file storage** reading |
 | `runs.json` | machine-readable manifest: two series, one entry per run |
 | `.nojekyll` | serve the files as-is, no Jekyll processing |
 
@@ -33,12 +35,19 @@ git worktree add ../ghp gh-pages          # first time: git worktree add --orpha
 
 # object storage
 mkdir -p ../ghp/runs/$DATE
-cp eu-object-storage-benchmark.html ../ghp/runs/$DATE/index.html
+cp object-storage/index.html ../ghp/runs/$DATE/index.html
 
 # block storage
 mkdir -p ../ghp/runs/block/$DATE
-cp eu-block-storage-benchmark.html ../ghp/runs/block/$DATE/index.html
+cp block-storage/index.html ../ghp/runs/block/$DATE/index.html
+
+# file storage
+mkdir -p ../ghp/runs/file/$DATE
+cp file-storage/index.html ../ghp/runs/file/$DATE/index.html
 ```
+
+Source paths changed when the repository was restructured: each benchmark is now a folder with
+its own generated `index.html`, not a single file at the repository root.
 
 Publish only the series whose prices you actually re-read. A run is a reading, not a rebuild:
 copying an unchanged page under a new date claims a freshness it does not have.
@@ -112,9 +121,46 @@ Spot-check the output against the rendered page before committing: open the run 
 and compare a handful of rows against the **Capacity €/GiB-month** and **Effective €/GiB-month**
 columns. If they disagree, the generator has drifted from the page and the manifest is wrong.
 
+### File storage `prices`
+
+Per row: `capacity` alone and `effective` (capacity plus provisioned IOPS and throughput plus
+per-GiB read and write charges), both EUR per GiB **held**, plus the flags the page uses. Several
+vendors will not sell a share below a minimum, so `billedGiB` can exceed the data held while both
+price figures still divide by the data held — that is deliberate, and it is how a capacity floor
+shows up as a worse price per gigabyte instead of vanishing into the denominator.
+
+```bash
+node -e '
+  const fs=require("fs");
+  const {ROWS,FX}=new Function(fs.readFileSync("file-storage/data.js","utf8")+"\nreturn {ROWS,FX};")();
+  const S={stored:2048,read:1024,written:256,iops:3000,mbs:100,hours:730};   // page defaults
+  const GIB=1.073741824;
+  const uf=u=>u==="GiB"?1:u==="GB"?GIB:(u==="TB"||u==="TB?")?GIB/1000:GIB;   // decimal assumption
+  const hf=b=>b==="h"?S.hours:b==="d30"?S.hours/720:1;
+  const billed=r=>Math.max(S.stored, r.minGiB||0);
+  const cap=r=>{ if(r.rate===null) return null;
+    const base=r.baseFee? r.baseFee.fee*hf(r.baseFee.bill)*FX[r.baseFee.cur] : 0;
+    return base + billed(r)*uf(r.unit)*r.rate*hf(r.bill)*FX[r.cur]; };
+  const incl=(s,r)=>s&&s.freePerGiB? s.freePerGiB*billed(r):0;
+  const perf=(s,t,r)=>!s?0:Math.max(t-incl(s,r), s.min||0, 0)*s.rate*hf(s.per)*FX[r.cur];
+  const acc=r=>{ if(!r.access) return 0; const f=uf(r.access.unit);
+    return (S.read*f*r.access.read + S.written*f*r.access.write)*FX[r.access.cur||r.cur]; };
+  const short=r=>(r.max.iops!=null&&S.iops>r.max.iops)||(r.max.mbs!=null&&S.mbs>r.max.mbs)||(r.max.size!=null&&S.stored>r.max.size);
+  const n=v=>v===null?null:Number((v/S.stored).toFixed(6));
+  const p={};
+  for(const r of ROWS){ const c=cap(r), parts=[c,perf(r.iops,S.iops,r),perf(r.tput,S.mbs,r),acc(r)];
+    const priced=r.rate!==null;
+    p[r.id]={capacity:n(c), effective:priced?n(parts.reduce((a,x)=>a+(x||0),0)):null,
+             billedGiB:priced?billed(r):null, billedOn:r.billedOn, floor:(r.minGiB||0)>S.stored,
+             partial:parts.some(x=>x===null)||!!r.ops, short:short(r)};}
+  console.log(JSON.stringify(p,null,1));
+'
+```
+
 ## Trend dashboard
 
 Deliberately absent until there are enough readings to draw a line through. When it arrives it
 reads `runs.json` — no other data source is needed, which is why the manifest is filled in from
-the first run onward. It must plot the two series on separate axes, and for block storage it
-should plot `capacity` and `effective` as separate lines: the gap between them is the story.
+the first run onward. It must plot the three series on separate axes, and for block and file
+storage it should plot `capacity` and `effective` as separate lines: the gap between them is the
+story.
