@@ -172,6 +172,36 @@ tr.is-exo td.key{color:var(--exo)}
 .srcs li{font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--muted)}
 .srcs a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line)}
 .srcs a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+/* ---------- ranking metric toggle, filters and shortfall marking ---------- */
+/* Used by any benchmark whose rows can fail to deliver the scenario, or that offers
+   more than one way to rank the same set. */
+.short{color:var(--warn); cursor:help; border-bottom:1px dotted var(--warn); font-weight:600}
+.rank .rk-bar.is-short{background:repeating-linear-gradient(135deg,var(--bar),var(--bar) 5px,var(--warn-soft) 5px,var(--warn-soft) 10px)}
+.legend{font-size:12.5px; color:var(--muted); margin:10px 0 0}
+.legend b{color:var(--warn)}
+.empty{color:var(--warn); font-size:14px; margin:18px 0 0}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-2); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:4px; padding:1px 5px; white-space:nowrap}
+.toolbar{display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; margin:18px 0 0}
+.toolbar > span.tb-label{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.seg{display:flex; gap:6px; flex-wrap:wrap}
+.seg button{
+  font-family:"IBM Plex Sans", sans-serif; font-size:13px; line-height:1;
+  color:var(--muted); background:var(--surface); border:1px solid var(--line);
+  border-radius:999px; padding:7px 13px; cursor:pointer;
+}
+.seg button:hover{color:var(--ink); border-color:var(--ink-2)}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.seg button[aria-pressed="true"]{color:var(--surface); background:var(--ink); border-color:var(--ink)}
+.seg button .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px;
+  background:currentColor; opacity:.55; vertical-align:middle}
+.seg button[aria-pressed="true"] .dot{opacity:1}
+.chart-head{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:baseline; justify-content:space-between}
+.chart-head .section-title{flex:1 1 340px; margin-bottom:14px}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 @media (max-width:640px){
   .wrap{padding:0 14px 64px}
@@ -464,8 +494,8 @@ function wireReset(defaults, state, render, extra){
 
 // Object storage price dataset — observed 2026-09-07 from official vendor pages.
 // Storage rates are in the vendor's own currency, per the vendor's own unit, per hour ('h') or per month ('m').
-const FX = { EUR: 1, USD: 0.858222, CHF: 1.063377 }; // EUR per 1 unit — ECB 2026-09-09 (frankfurter.dev)
-const FX_NOTE = "ECB 09.09.2026: 1 EUR = 1.1652 USD = 0.9404 CHF";
+const FX = { EUR: 1, USD: 0.898230, CHF: 1.081432 }; // EUR per 1 unit — ECB 2026-10-28 (frankfurter.dev)
+const FX_NOTE = "ECB 28.10.2026: 1 EUR = 1.1133 USD = 0.9247 CHF";
 const GIB = 1.073741824; // billable decimal GB per physical GiB
 
 const T = (upTo, r) => ({ upTo, r }); // upTo = cumulative GiB threshold

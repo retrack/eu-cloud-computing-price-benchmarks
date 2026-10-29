@@ -10,6 +10,7 @@ comparison as a single dependency-free HTML page with an adjustable total-cost s
 |---|---|---|---|
 | [**Object storage**](object-storage/) | S3-compatible buckets, from AWS S3 Standard to Glacier Deep Archive | 36 vendor × class | 2026-09-07 |
 | [**Block storage**](block-storage/) | EBS-shaped volumes — attachable, resizable, snapshottable | 37 vendor × class | 2026-09-10 |
+| [**File storage**](file-storage/) | Managed shared file systems — the AWS EFS shape, mounted by several instances at once | 31 vendor × class | 2026-10-29 |
 
 Published readings: **https://retrack.github.io/eu-cloud-computing-price-benchmarks/**
 
@@ -64,10 +65,10 @@ Each benchmark's own README states the conventions particular to it, and its kno
 ## Architecture
 
 A benchmark is a folder. Everything generic lives in `shared/` and is used by all of them;
-everything product-specific lives in the folder. The two pages are deliberately **separate
-pages, not two tabs of one** — the products are bought by different people for different
-reasons, the cost drivers do not overlap, and merging the scenarios would produce a control
-panel nobody could read. They share the look, the machinery and the tooling; they do not
+everything product-specific lives in the folder. The benchmarks are deliberately **separate
+pages, not tabs of one** — the products are bought by different people for different reasons,
+the cost drivers do not overlap, and merging the scenarios would produce a control panel
+nobody could read. They share the look, the machinery and the tooling; they do not
 share a dataset or a cost model.
 
 | Path | Role |
@@ -79,7 +80,7 @@ share a dataset or a cost model.
 | `<benchmark>/data.js` | the dataset — one entry per vendor × class |
 | `<benchmark>/page.html` | the body markup: header, controls, table head, notes, sources |
 | `<benchmark>/page.js` | the cost model, the renderers and the wiring calls |
-| `<benchmark>/style.css` | product-specific CSS, when the page needs any |
+| `<benchmark>/style.css` | product-specific CSS, when a page needs any — none does at present |
 | `<benchmark>/index.html` | generated; committed so a clone opens without a build |
 | `<benchmark>/README.md` | what it covers, its conventions, its known gaps |
 | `tools/build.py` | composes the shell + shared + product parts into each `index.html` |

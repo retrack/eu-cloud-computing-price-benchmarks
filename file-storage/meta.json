@@ -1,0 +1,5 @@
+{
+  "title": "EU File Storage Benchmark",
+  "description": "Managed shared file system list prices in Europe — the AWS EFS shape — normalised to euros per stored GiB per month, capacity floors and performance charges included.",
+  "observed": "2026-10-29"
+}

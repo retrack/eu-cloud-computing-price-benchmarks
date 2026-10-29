@@ -1,0 +1,159 @@
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Managed file systems · competitive pricing</p>
+  <h1>File storage in Europe:<br>what a shared gigabyte actually costs</h1>
+  <p class="standfirst">Managed shared file systems — the AWS EFS shape: mounted over NFS or SMB by several instances at once, not an S3 bucket and not a single-attach volume. Every rate was read on 29 October 2026 from the vendors' own pricing pages and price feeds, then normalised to <strong>euros per stored GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. <strong>Exoscale has no file storage product</strong>, so this is the one benchmark here with no Exoscale row.</p>
+  <div class="stamp">
+    <span>Observed <b>2026-10-29</b></span>
+    <span>Basis <b id="stamp-hours">730 h/month</b></span>
+    <span>Unit <b>GiB (2³⁰ bytes)</b></span>
+    <span>FX <b id="stamp-fx"></b></span>
+    <span>Prices <b>excl. VAT</b></span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-grid">
+    <div class="field"><label for="in-stored">Data held (GiB)</label><input id="in-stored" type="number" min="1" step="128" value="2048"></div>
+    <div class="field"><label for="in-read">Read (GiB/month)</label><input id="in-read" type="number" min="0" step="128" value="1024"></div>
+    <div class="field"><label for="in-written">Written (GiB/month)</label><input id="in-written" type="number" min="0" step="64" value="256"></div>
+    <div class="field"><label for="in-iops">IOPS wanted</label><input id="in-iops" type="number" min="0" step="500" value="3000"></div>
+    <div class="field"><label for="in-mbs">MiB/s wanted</label><input id="in-mbs" type="number" min="0" step="25" value="100"></div>
+    <div class="field"><label for="in-hours">Hours per month</label>
+      <select id="in-hours">
+        <option value="720">720 h — 30-day month</option>
+        <option value="730" selected>730 h — annual average</option>
+        <option value="744">744 h — 31-day month</option>
+      </select></div>
+    <div class="field"><label for="in-unit">“GB” left undefined by the vendor</label>
+      <select id="in-unit">
+        <option value="decimal" selected>treat as decimal GB (10⁹)</option>
+        <option value="binary">treat as GiB (2³⁰)</option>
+      </select></div>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="panel-sub" id="panel-sub"></p>
+
+<div class="chart-head">
+  <h2 class="section-title" id="rank-title">Effective price of the scenario — € per stored GiB per month</h2>
+  <div class="seg" id="metric" role="group" aria-label="Chart metric">
+    <button type="button" data-x="eff" aria-pressed="true">Effective</button>
+    <button type="button" data-x="cap" aria-pressed="false">Capacity only</button>
+  </div>
+</div>
+<div class="rank" id="rank"></div>
+<p class="legend" id="legend"></p>
+
+<h2 class="section-title">Rate detail and scenario cost</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr id="thead-row">
+      <th class="sortable" data-sort="vendor">Vendor</th>
+      <th class="sortable" data-sort="cls">Class · region</th>
+      <th>Published rate</th>
+      <th class="sortable" data-sort="billed">Billed on</th>
+      <th class="num sortable" data-sort="capunit">Capacity<br>€/GiB-month</th>
+      <th class="num sortable" data-sort="effunit">Effective<br>€/GiB-month</th>
+      <th>Performance</th>
+      <th class="num sortable" data-sort="iops">IOPS<br>charge</th>
+      <th class="num sortable" data-sort="tput">MiB/s<br>charge</th>
+      <th class="num sortable" data-sort="access">Read / write<br>€/GiB</th>
+      <th class="num sortable" data-sort="snap">Snapshot<br>€/GiB-month</th>
+      <th>Redundancy</th>
+      <th class="num sortable" data-sort="cost">Scenario cost<br>€/month</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p class="sorthint">Click a column header to sort; click again to reverse.
+  <button type="button" id="unsort">Reset order</button></p>
+
+<div class="notes">
+  <div class="note">
+    <h3>Why there is no Exoscale row</h3>
+    <p>Exoscale sells object storage and block storage, but no managed shared file system. Rather than show a row with a blank price, the table leaves it out — a product a vendor does not offer is absent, not free, and not a zero in a ranking.</p>
+    <p>If you need a shared POSIX file system on Exoscale today, the honest answer is that you build it yourself on Block Storage, and the cost of that is an instance plus a volume plus your own operational time, which this page does not try to price.</p>
+  </div>
+  <div class="note">
+    <h3>The capacity floor is the thing the headline rate hides</h3>
+    <ul>
+      <li><b>AWS EFS has no minimum at all</b> and bills the bytes actually held. So do Azure's pay-as-you-go tiers and, by its own description, T Cloud Public's SFS.</li>
+      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
+      <li>Ask for less than a vendor's minimum and the row is marked <span class="short">▲</span>, its bar hatched, and the cost is what they would actually invoice. Drop the capacity control below 2,560 GiB and watch Google Basic SSD stop moving.</li>
+      <li>Both chart metrics divide by the GiB you <i>asked for</i>, not the GiB billed, so a floor shows up as a higher price per gigabyte rather than disappearing into the denominator.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Three different things called file storage pricing</h3>
+    <ul>
+      <li><b>Pay for what you hold</b> — AWS EFS, Azure pay-as-you-go. Elastic, and on EFS the per-GiB read and write charges are usually the larger half of the bill.</li>
+      <li><b>Pay for the share</b> — Google Filestore, OVHcloud, Scaleway, IONOS, STACKIT. Performance comes bundled and scales with the size you bought.</li>
+      <li><b>Pay for storage, IOPS and throughput separately</b> — Azure Files provisioned v2, and Google Filestore with custom performance switched on. Nothing is included: Azure's SSD tier will not sell fewer than 3,000 IOPS and 100 MiB/s, so a small share is dominated by its performance floor.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Documented gaps, left as gaps</h3>
+    <ul>
+      <li><b>T Cloud Public</b> publishes no SFS rate card — calculator and console only, the same as its block and object storage. Its row carries no figure.</li>
+      <li><b>STACKIT</b> sells Standard, Premium and Ultra at €0.22, €0.36 and €0.65 per GB-month and publishes no IOPS or throughput figure for any of them, so nothing on its own price list says what the extra 62 % or 188 % buys. Its product page advertises a two-zone “Metro” version that does not appear in the price list at all.</li>
+      <li><b>IONOS</b> publishes no performance figure and no redundancy model for NFS, and quotes per TB without saying which TB.</li>
+      <li><b>Scaleway</b> prints “€0.000221/HOUR” with no unit on the price table; that it is per GB follows from the legal notice beneath it, not from the number.</li>
+      <li><b>Azure's pay-as-you-go tiers</b> charge per transaction. Those charges are published but cannot be turned into a monthly figure without assuming an average I/O size, so they are shown, marked <span class="np">+ops</span>, and the scenario total for those rows is a floor.</li>
+      <li><b>DigitalOcean</b> publishes throughput in Gbps and no IOPS figure at all; the MiB/s shown here is the converted figure, and the per-share ceiling is what the ⚠ check uses. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
+      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The product page says the share runs from 250 GiB, so GiB is used.</li>
+      <li><b>Hetzner, Infomaniak and Cloudflare</b> sell no managed shared file system and are absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Scenario assumptions</h3>
+    <ul>
+      <li>IOPS and throughput are bought at the target, or at the vendor's floor where the floor is higher. Rows that include performance in the capacity rate charge nothing extra and are marked <span class="short">⚠</span> only if their published ceiling is below the target.</li>
+      <li>Snapshots are shown per GiB but not costed into the scenario — snapshot volume depends on a change rate specific to the workload.</li>
+      <li>Minimum storage durations (EFS Archive, 90 days), minimum billable file sizes (EFS IA and Archive, 128 KiB) and cross-region replication are shown in the notes but not monetised.</li>
+      <li>EFS is costed in its default Elastic Throughput mode; the Provisioned Throughput row shows the alternative, where you buy MiB/s up front and pay nothing per GiB transferred.</li>
+      <li>Prices exclude VAT, negotiated discounts and commitment terms. Azure Files reservations alone are worth up to 36 % and are not modelled.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>How the rates were collected</h3>
+    <p>Every figure comes from the vendor's own price feed where one exists, so nothing depends on reading a rendered table:</p>
+    <ul>
+      <li><b>AWS</b> — the Price List Bulk API, <code>AmazonEFS</code> offer for <code>eu-central-1</code>.</li>
+      <li><b>Azure</b> — the Retail Prices API, <code>armRegionName eq 'germanywestcentral'</code>, for Azure Files Provisioned v2, Premium Files and Files v2. The provisioning minimums come from the Azure Files billing documentation.</li>
+      <li><b>Google</b> — the pricing tables embedded in the Filestore pricing page, Frankfurt column; capacity ranges from the service-tiers documentation.</li>
+      <li><b>OVHcloud</b> — the public order catalogue, <code>/order/catalog/public/cloud</code> for the DE subsidiary. <b>STACKIT</b> — price list PDF v1.0.44. <b>IONOS</b> — the German price page.</li>
+      <li><b>Scaleway, UpCloud and DigitalOcean</b> answer a plain fetch with a bot challenge or a 403; those three were read from the rendered page, with the per-product legal notice or FAQ opened to confirm the unit and the regions.</li>
+      <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="srcs">
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 29 October 2026</h2>
+  <ul>
+    <li><a href="https://aws.amazon.com/efs/pricing/">aws.amazon.com/efs/pricing</a> (eu-central-1)</li>
+    <li><a href="https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEFS/current/eu-central-1/index.csv">AWS Price List Bulk API — EFS, eu-central-1</a></li>
+    <li><a href="https://azure.microsoft.com/en-us/pricing/details/storage/files/">azure.microsoft.com — Azure Files</a></li>
+    <li><a href="https://prices.azure.com/api/retail/prices">Azure Retail Prices API</a> (germanywestcentral)</li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing">Microsoft Learn — Azure Files billing models</a></li>
+    <li><a href="https://cloud.google.com/filestore/pricing">cloud.google.com/filestore/pricing</a> (europe-west3)</li>
+    <li><a href="https://cloud.google.com/filestore/docs/service-tiers">cloud.google.com — Filestore service tiers</a></li>
+    <li><a href="https://www.ovhcloud.com/en/public-cloud/file-storage/">ovhcloud.com — File Storage</a></li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.scaleway.com/en/file-storage/">scaleway.com — File Storage</a></li>
+    <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://cloud.ionos.de/preise">cloud.ionos.de — Preise</a></li>
+    <li><a href="https://stackit.com/en/products/storage/stackit-file-storage">stackit.com — File Storage</a></li>
+    <li><a href="https://stackit.com/en/prices/cloud">stackit.com — price list v1.0.44</a></li>
+    <li><a href="https://upcloud.com/pricing/">upcloud.com/pricing</a></li>
+    <li><a href="https://upcloud.com/products/file-storage/">upcloud.com — File Storage</a></li>
+    <li><a href="https://www.digitalocean.com/pricing/network-file-storage">digitalocean.com — Network File Storage pricing</a></li>
+    <li><a href="https://www.digitalocean.com/products/storage/network-file-storage">digitalocean.com — Network File Storage</a></li>
+    <li><a href="https://www.t-cloud-public.com/en/prices/pricing-models/storage">t-cloud-public.com — storage pricing model</a></li>
+    <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a> — no file storage product</li>
+  </ul>
+</div>
+</div>

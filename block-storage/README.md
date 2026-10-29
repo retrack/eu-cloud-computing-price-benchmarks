@@ -77,6 +77,6 @@ Three behaviours are specific to this page:
 python3 ../tools/build.py block-storage
 ```
 
-`data.js`, `page.html`, `page.js` and `style.css` are the sources, composed with `shared/`
-into `index.html`. See the repository `AGENTS.md` for the row shape and the collection
+`data.js`, `page.html` and `page.js` are the sources, composed with `shared/` into
+`index.html`. See the repository `AGENTS.md` for the row shape and the collection
 procedure.

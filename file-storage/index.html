@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EU File Storage Benchmark</title>
+<meta name="description" content="Managed shared file system list prices in Europe — the AWS EFS shape — normalised to euros per stored GiB per month, capacity floors and performance charges included.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F5; --line:#D8DFE7; --line-soft:#E7ECF1;
+  --ink:#0E1A2B; --ink-2:#3B4B60; --muted:#6C7C92;
+  --accent:#DA291C;           /* Exoscale red */
+  --exo:#0B6E4F;              /* Exoscale green, SOS rows */
+  --exo-soft:#E4F2EC;
+  --warn:#A45B00; --warn-soft:#FAF0E2;
+  --bar:#9FB2C6; --bar-exo:#0B6E4F;
+  --shadow:0 1px 2px rgba(14,26,43,.06), 0 8px 24px -16px rgba(14,26,43,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+    --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+    --accent:#FF6155; --exo:#3FCB9B; --exo-soft:#122B24;
+    --warn:#E5A85C; --warn-soft:#2A2116;
+    --bar:#41556B; --bar-exo:#3FCB9B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C121B; --surface:#141C27; --surface-2:#1B2531; --line:#2A3746; --line-soft:#222D3A;
+  --ink:#E9EEF4; --ink-2:#BCC8D6; --muted:#8698AC;
+  --accent:#FF6155; --exo:#3FCB9B; --exo-soft:#122B24;
+  --warn:#E5A85C; --warn-soft:#2A2116;
+  --bar:#41556B; --bar-exo:#3FCB9B;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:15px; line-height:1.55; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1400px; margin:0 auto; padding:0 24px 96px}
+
+/* ---------- header ---------- */
+header.masthead{padding:44px 0 26px; border-bottom:3px solid var(--accent)}
+.eyebrow{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 12px;
+}
+h1{
+  font-family:Archivo, "Helvetica Neue", sans-serif; font-weight:700; letter-spacing:-.02em;
+  font-size:clamp(30px,4.4vw,46px); line-height:1.05; margin:0 0 14px; text-wrap:balance;
+}
+.standfirst{max-width:66ch; color:var(--ink-2); font-size:16.5px; margin:0}
+.stamp{
+  display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:18px;
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--muted);
+}
+.stamp b{color:var(--ink-2); font-weight:500}
+
+/* ---------- controls ---------- */
+.controls{
+  position:sticky; top:0; z-index:20; background:var(--surface); border:1px solid var(--line);
+  border-radius:10px; box-shadow:var(--shadow); margin:22px 0 0; padding:16px 18px;
+}
+.controls-grid{display:flex; flex-wrap:wrap; gap:18px 26px; align-items:flex-end}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.field input, .field select{
+  font-family:"IBM Plex Mono", monospace; font-size:14px; font-weight:500; color:var(--ink);
+  background:var(--surface-2); border:1px solid var(--line); border-radius:6px;
+  padding:7px 9px; width:112px;
+}
+.field select{width:auto; min-width:160px}
+.field input:focus-visible, .field select:focus-visible, .tab:focus-visible, .reset:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+.reset{
+  font-family:"IBM Plex Sans"; font-size:13px; color:var(--ink-2); background:none;
+  border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer;
+}
+.reset:hover{border-color:var(--accent); color:var(--accent)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex; gap:2px; margin:30px 0 0; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.tab{
+  font-family:Archivo, sans-serif; font-weight:600; font-size:15px; letter-spacing:-.01em;
+  background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-1px;
+  padding:11px 18px; color:var(--muted); cursor:pointer;
+}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.panel-sub{color:var(--ink-2); margin:16px 0 0; max-width:70ch; font-size:15px}
+
+/* ---------- ranking ---------- */
+.section-title{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin:38px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line-soft);
+}
+.rank{display:grid; grid-template-columns:minmax(150px,auto) 1fr minmax(84px,auto); gap:3px 14px; align-items:center}
+.rank .rk-name{font-size:13.5px; color:var(--ink-2); text-align:right; padding:2px 0; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis}
+.rank .rk-name.is-exo{color:var(--exo); font-weight:600}
+.rank .rk-track{height:17px; position:relative}
+.rank .rk-bar{height:100%; background:var(--bar); border-radius:0 2px 2px 0}
+.rank .rk-bar.is-exo{background:var(--bar-exo)}
+.rank .rk-val{font-family:"IBM Plex Mono", monospace; font-size:12.5px; font-variant-numeric:tabular-nums;
+  color:var(--ink-2)}
+.rank .rk-val.is-exo{color:var(--exo); font-weight:600}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface);
+  box-shadow:var(--shadow); margin-top:14px}
+table{border-collapse:collapse; width:100%; min-width:1240px; font-size:13.5px}
+thead th{
+  background:var(--surface-2);
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; text-align:left; padding:11px 12px; border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+thead th.num{text-align:right}
+thead th.sortable{cursor:pointer; user-select:none; position:relative; padding-right:24px}
+thead th.sortable:hover{color:var(--ink)}
+thead th.sortable:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+thead th.sortable::after{
+  content:"⇅"; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+  font-size:11px; opacity:.32;
+}
+thead th.sortable[aria-sort="ascending"]::after{content:"↑"; opacity:1; color:var(--accent)}
+thead th.sortable[aria-sort="descending"]::after{content:"↓"; opacity:1; color:var(--accent)}
+.sorthint{font-size:12.5px; color:var(--muted); margin:10px 0 0}
+.sorthint button{
+  font:inherit; color:var(--ink-2); background:none; border:1px solid var(--line);
+  border-radius:5px; padding:2px 8px; margin-left:6px; cursor:pointer;
+}
+.sorthint button:hover{border-color:var(--accent); color:var(--accent)}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.is-exo{background:var(--exo-soft)}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.is-exo:hover{background:var(--exo-soft); filter:brightness(1.02)}
+td.num{font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+td.key{font-weight:600; white-space:nowrap}
+tr.is-exo td.key{color:var(--exo)}
+.cls{color:var(--ink-2)}
+.sub{display:block; color:var(--muted); font-size:11.5px; font-weight:400; line-height:1.35; margin-top:2px;
+  white-space:normal; max-width:26ch}
+.np{color:var(--warn); font-family:"IBM Plex Mono", monospace; font-size:12px}
+.free{color:var(--exo); font-weight:600}
+.flag{color:var(--warn); cursor:help; border-bottom:1px dotted var(--warn)}
+.big{font-weight:600}
+
+/* ---------- notes ---------- */
+.notes{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:22px; margin-top:44px}
+.note h3{
+  font-family:Archivo, sans-serif; font-size:15px; font-weight:600; margin:0 0 8px; letter-spacing:-.01em;
+}
+.note p, .note li{color:var(--ink-2); font-size:13.8px; margin:0 0 8px}
+.note ul{margin:0; padding-left:18px}
+.note li{margin-bottom:6px}
+.note code{font-family:"IBM Plex Mono", monospace; font-size:12.5px; background:var(--surface-2);
+  padding:1px 4px; border-radius:3px}
+.srcs{margin-top:36px; padding-top:18px; border-top:1px solid var(--line)}
+.srcs ul{list-style:none; padding:0; margin:10px 0 0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:4px 24px}
+.srcs li{font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--muted)}
+.srcs a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line)}
+.srcs a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+/* ---------- ranking metric toggle, filters and shortfall marking ---------- */
+/* Used by any benchmark whose rows can fail to deliver the scenario, or that offers
+   more than one way to rank the same set. */
+.short{color:var(--warn); cursor:help; border-bottom:1px dotted var(--warn); font-weight:600}
+.rank .rk-bar.is-short{background:repeating-linear-gradient(135deg,var(--bar),var(--bar) 5px,var(--warn-soft) 5px,var(--warn-soft) 10px)}
+.legend{font-size:12.5px; color:var(--muted); margin:10px 0 0}
+.legend b{color:var(--warn)}
+.empty{color:var(--warn); font-size:14px; margin:18px 0 0}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-2); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:4px; padding:1px 5px; white-space:nowrap}
+.toolbar{display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; margin:18px 0 0}
+.toolbar > span.tb-label{
+  font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.seg{display:flex; gap:6px; flex-wrap:wrap}
+.seg button{
+  font-family:"IBM Plex Sans", sans-serif; font-size:13px; line-height:1;
+  color:var(--muted); background:var(--surface); border:1px solid var(--line);
+  border-radius:999px; padding:7px 13px; cursor:pointer;
+}
+.seg button:hover{color:var(--ink); border-color:var(--ink-2)}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.seg button[aria-pressed="true"]{color:var(--surface); background:var(--ink); border-color:var(--ink)}
+.seg button .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px;
+  background:currentColor; opacity:.55; vertical-align:middle}
+.seg button[aria-pressed="true"] .dot{opacity:1}
+.chart-head{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:baseline; justify-content:space-between}
+.chart-head .section-title{flex:1 1 340px; margin-bottom:14px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+@media (max-width:640px){
+  .wrap{padding:0 14px 64px}
+  .rank{grid-template-columns:minmax(110px,auto) 1fr minmax(74px,auto)}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Managed file systems · competitive pricing</p>
+  <h1>File storage in Europe:<br>what a shared gigabyte actually costs</h1>
+  <p class="standfirst">Managed shared file systems — the AWS EFS shape: mounted over NFS or SMB by several instances at once, not an S3 bucket and not a single-attach volume. Every rate was read on 29 October 2026 from the vendors' own pricing pages and price feeds, then normalised to <strong>euros per stored GiB per month</strong>, Frankfurt region or the closest equivalent each vendor operates. <strong>Exoscale has no file storage product</strong>, so this is the one benchmark here with no Exoscale row.</p>
+  <div class="stamp">
+    <span>Observed <b>2026-10-29</b></span>
+    <span>Basis <b id="stamp-hours">730 h/month</b></span>
+    <span>Unit <b>GiB (2³⁰ bytes)</b></span>
+    <span>FX <b id="stamp-fx"></b></span>
+    <span>Prices <b>excl. VAT</b></span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-grid">
+    <div class="field"><label for="in-stored">Data held (GiB)</label><input id="in-stored" type="number" min="1" step="128" value="2048"></div>
+    <div class="field"><label for="in-read">Read (GiB/month)</label><input id="in-read" type="number" min="0" step="128" value="1024"></div>
+    <div class="field"><label for="in-written">Written (GiB/month)</label><input id="in-written" type="number" min="0" step="64" value="256"></div>
+    <div class="field"><label for="in-iops">IOPS wanted</label><input id="in-iops" type="number" min="0" step="500" value="3000"></div>
+    <div class="field"><label for="in-mbs">MiB/s wanted</label><input id="in-mbs" type="number" min="0" step="25" value="100"></div>
+    <div class="field"><label for="in-hours">Hours per month</label>
+      <select id="in-hours">
+        <option value="720">720 h — 30-day month</option>
+        <option value="730" selected>730 h — annual average</option>
+        <option value="744">744 h — 31-day month</option>
+      </select></div>
+    <div class="field"><label for="in-unit">“GB” left undefined by the vendor</label>
+      <select id="in-unit">
+        <option value="decimal" selected>treat as decimal GB (10⁹)</option>
+        <option value="binary">treat as GiB (2³⁰)</option>
+      </select></div>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="panel-sub" id="panel-sub"></p>
+
+<div class="chart-head">
+  <h2 class="section-title" id="rank-title">Effective price of the scenario — € per stored GiB per month</h2>
+  <div class="seg" id="metric" role="group" aria-label="Chart metric">
+    <button type="button" data-x="eff" aria-pressed="true">Effective</button>
+    <button type="button" data-x="cap" aria-pressed="false">Capacity only</button>
+  </div>
+</div>
+<div class="rank" id="rank"></div>
+<p class="legend" id="legend"></p>
+
+<h2 class="section-title">Rate detail and scenario cost</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr id="thead-row">
+      <th class="sortable" data-sort="vendor">Vendor</th>
+      <th class="sortable" data-sort="cls">Class · region</th>
+      <th>Published rate</th>
+      <th class="sortable" data-sort="billed">Billed on</th>
+      <th class="num sortable" data-sort="capunit">Capacity<br>€/GiB-month</th>
+      <th class="num sortable" data-sort="effunit">Effective<br>€/GiB-month</th>
+      <th>Performance</th>
+      <th class="num sortable" data-sort="iops">IOPS<br>charge</th>
+      <th class="num sortable" data-sort="tput">MiB/s<br>charge</th>
+      <th class="num sortable" data-sort="access">Read / write<br>€/GiB</th>
+      <th class="num sortable" data-sort="snap">Snapshot<br>€/GiB-month</th>
+      <th>Redundancy</th>
+      <th class="num sortable" data-sort="cost">Scenario cost<br>€/month</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p class="sorthint">Click a column header to sort; click again to reverse.
+  <button type="button" id="unsort">Reset order</button></p>
+
+<div class="notes">
+  <div class="note">
+    <h3>Why there is no Exoscale row</h3>
+    <p>Exoscale sells object storage and block storage, but no managed shared file system. Rather than show a row with a blank price, the table leaves it out — a product a vendor does not offer is absent, not free, and not a zero in a ranking.</p>
+    <p>If you need a shared POSIX file system on Exoscale today, the honest answer is that you build it yourself on Block Storage, and the cost of that is an instance plus a volume plus your own operational time, which this page does not try to price.</p>
+  </div>
+  <div class="note">
+    <h3>The capacity floor is the thing the headline rate hides</h3>
+    <ul>
+      <li><b>AWS EFS has no minimum at all</b> and bills the bytes actually held. So do Azure's pay-as-you-go tiers and, by its own description, T Cloud Public's SFS.</li>
+      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
+      <li>Ask for less than a vendor's minimum and the row is marked <span class="short">▲</span>, its bar hatched, and the cost is what they would actually invoice. Drop the capacity control below 2,560 GiB and watch Google Basic SSD stop moving.</li>
+      <li>Both chart metrics divide by the GiB you <i>asked for</i>, not the GiB billed, so a floor shows up as a higher price per gigabyte rather than disappearing into the denominator.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Three different things called file storage pricing</h3>
+    <ul>
+      <li><b>Pay for what you hold</b> — AWS EFS, Azure pay-as-you-go. Elastic, and on EFS the per-GiB read and write charges are usually the larger half of the bill.</li>
+      <li><b>Pay for the share</b> — Google Filestore, OVHcloud, Scaleway, IONOS, STACKIT. Performance comes bundled and scales with the size you bought.</li>
+      <li><b>Pay for storage, IOPS and throughput separately</b> — Azure Files provisioned v2, and Google Filestore with custom performance switched on. Nothing is included: Azure's SSD tier will not sell fewer than 3,000 IOPS and 100 MiB/s, so a small share is dominated by its performance floor.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Documented gaps, left as gaps</h3>
+    <ul>
+      <li><b>T Cloud Public</b> publishes no SFS rate card — calculator and console only, the same as its block and object storage. Its row carries no figure.</li>
+      <li><b>STACKIT</b> sells Standard, Premium and Ultra at €0.22, €0.36 and €0.65 per GB-month and publishes no IOPS or throughput figure for any of them, so nothing on its own price list says what the extra 62 % or 188 % buys. Its product page advertises a two-zone “Metro” version that does not appear in the price list at all.</li>
+      <li><b>IONOS</b> publishes no performance figure and no redundancy model for NFS, and quotes per TB without saying which TB.</li>
+      <li><b>Scaleway</b> prints “€0.000221/HOUR” with no unit on the price table; that it is per GB follows from the legal notice beneath it, not from the number.</li>
+      <li><b>Azure's pay-as-you-go tiers</b> charge per transaction. Those charges are published but cannot be turned into a monthly figure without assuming an average I/O size, so they are shown, marked <span class="np">+ops</span>, and the scenario total for those rows is a floor.</li>
+      <li><b>DigitalOcean</b> publishes throughput in Gbps and no IOPS figure at all; the MiB/s shown here is the converted figure, and the per-share ceiling is what the ⚠ check uses. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
+      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The product page says the share runs from 250 GiB, so GiB is used.</li>
+      <li><b>Hetzner, Infomaniak and Cloudflare</b> sell no managed shared file system and are absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>Scenario assumptions</h3>
+    <ul>
+      <li>IOPS and throughput are bought at the target, or at the vendor's floor where the floor is higher. Rows that include performance in the capacity rate charge nothing extra and are marked <span class="short">⚠</span> only if their published ceiling is below the target.</li>
+      <li>Snapshots are shown per GiB but not costed into the scenario — snapshot volume depends on a change rate specific to the workload.</li>
+      <li>Minimum storage durations (EFS Archive, 90 days), minimum billable file sizes (EFS IA and Archive, 128 KiB) and cross-region replication are shown in the notes but not monetised.</li>
+      <li>EFS is costed in its default Elastic Throughput mode; the Provisioned Throughput row shows the alternative, where you buy MiB/s up front and pay nothing per GiB transferred.</li>
+      <li>Prices exclude VAT, negotiated discounts and commitment terms. Azure Files reservations alone are worth up to 36 % and are not modelled.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h3>How the rates were collected</h3>
+    <p>Every figure comes from the vendor's own price feed where one exists, so nothing depends on reading a rendered table:</p>
+    <ul>
+      <li><b>AWS</b> — the Price List Bulk API, <code>AmazonEFS</code> offer for <code>eu-central-1</code>.</li>
+      <li><b>Azure</b> — the Retail Prices API, <code>armRegionName eq 'germanywestcentral'</code>, for Azure Files Provisioned v2, Premium Files and Files v2. The provisioning minimums come from the Azure Files billing documentation.</li>
+      <li><b>Google</b> — the pricing tables embedded in the Filestore pricing page, Frankfurt column; capacity ranges from the service-tiers documentation.</li>
+      <li><b>OVHcloud</b> — the public order catalogue, <code>/order/catalog/public/cloud</code> for the DE subsidiary. <b>STACKIT</b> — price list PDF v1.0.44. <b>IONOS</b> — the German price page.</li>
+      <li><b>Scaleway, UpCloud and DigitalOcean</b> answer a plain fetch with a bot challenge or a 403; those three were read from the rendered page, with the per-product legal notice or FAQ opened to confirm the unit and the regions.</li>
+      <li>Vendor pricing moves without notice: re-run the collection before reusing a reading more than a month old.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="srcs">
+  <h2 class="section-title" style="margin-top:0">Sources — official pages, read 29 October 2026</h2>
+  <ul>
+    <li><a href="https://aws.amazon.com/efs/pricing/">aws.amazon.com/efs/pricing</a> (eu-central-1)</li>
+    <li><a href="https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEFS/current/eu-central-1/index.csv">AWS Price List Bulk API — EFS, eu-central-1</a></li>
+    <li><a href="https://azure.microsoft.com/en-us/pricing/details/storage/files/">azure.microsoft.com — Azure Files</a></li>
+    <li><a href="https://prices.azure.com/api/retail/prices">Azure Retail Prices API</a> (germanywestcentral)</li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing">Microsoft Learn — Azure Files billing models</a></li>
+    <li><a href="https://cloud.google.com/filestore/pricing">cloud.google.com/filestore/pricing</a> (europe-west3)</li>
+    <li><a href="https://cloud.google.com/filestore/docs/service-tiers">cloud.google.com — Filestore service tiers</a></li>
+    <li><a href="https://www.ovhcloud.com/en/public-cloud/file-storage/">ovhcloud.com — File Storage</a></li>
+    <li><a href="https://www.ovhcloud.com/en-ie/public-cloud/prices/">ovhcloud.com — public cloud prices</a></li>
+    <li><a href="https://www.scaleway.com/en/file-storage/">scaleway.com — File Storage</a></li>
+    <li><a href="https://www.scaleway.com/en/pricing/storage/">scaleway.com/pricing/storage</a></li>
+    <li><a href="https://cloud.ionos.de/preise">cloud.ionos.de — Preise</a></li>
+    <li><a href="https://stackit.com/en/products/storage/stackit-file-storage">stackit.com — File Storage</a></li>
+    <li><a href="https://stackit.com/en/prices/cloud">stackit.com — price list v1.0.44</a></li>
+    <li><a href="https://upcloud.com/pricing/">upcloud.com/pricing</a></li>
+    <li><a href="https://upcloud.com/products/file-storage/">upcloud.com — File Storage</a></li>
+    <li><a href="https://www.digitalocean.com/pricing/network-file-storage">digitalocean.com — Network File Storage pricing</a></li>
+    <li><a href="https://www.digitalocean.com/products/storage/network-file-storage">digitalocean.com — Network File Storage</a></li>
+    <li><a href="https://www.t-cloud-public.com/en/prices/pricing-models/storage">t-cloud-public.com — storage pricing model</a></li>
+    <li><a href="https://www.exoscale.com/pricing/">exoscale.com/pricing</a> — no file storage product</li>
+  </ul>
+</div>
+</div>
+<script>
+/* Shared machinery for every benchmark page.
+ *
+ * The build concatenates this file, then <product>/data.js, then <product>/page.js, into one
+ * <script>. Functions here read `S` (the page state), `GIB` and `FX`, all declared by those
+ * later files — that is safe because nothing here runs at load time. The wiring helpers at the
+ * bottom are called by each page.js once its own state and render() exist.
+ */
+
+/* ---------------- units and money ---------------- */
+
+/* Billable units per physical unit. "GiB" binary confirmed, "GB" decimal confirmed,
+   anything else the vendor never stated — those follow the page's selector. */
+function uf(unit){
+  if(unit === "GiB") return 1;
+  if(unit === "GB")  return GIB;
+  return S.unitMode === "decimal" ? GIB : 1;
+}
+
+/* Months' worth of a rate quoted per hour, per 30-day month, or per month. */
+function hf(bill){
+  if(bill === "h")   return S.hours;
+  if(bill === "d30") return S.hours / 720;
+  return 1;
+}
+
+/* Cost of `qty` against a cumulative tier ladder, charged tier by tier. */
+function tierCost(qty, tiers){
+  let cost = 0, prev = 0;
+  for(const t of tiers){
+    const upTo = Math.min(t.upTo, qty);
+    if(upTo > prev){ cost += (upTo - prev) * t.r; prev = upTo; }
+    if(prev >= qty) break;
+  }
+  return cost;
+}
+
+/* ---------------- formatting ---------------- */
+const fmtU = v => v === null ? "—" : (v < 0.01 ? v.toFixed(5) : v.toFixed(4));
+const fmtE = v => Math.round(v).toLocaleString("en-GB");
+const num  = n => n.toLocaleString("en-GB");
+const sym  = c => c === "EUR" ? "€" : c === "USD" ? "$" : "CHF";
+const esc  = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---------------- ranking chart ---------------- */
+
+/* items: [{ vendor, cls, value, exo, short }] — already filtered and sorted ascending.
+   `short` hatches the bar: the row cannot deliver what the scenario asked for. */
+function renderRanking(elId, items){
+  const el = document.getElementById(elId);
+  if(!items.length){ el.innerHTML = ""; return; }
+  const max = Math.max(...items.map(i => i.value));
+  el.innerHTML = items.map(i => {
+    const exo = i.exo ? " is-exo" : "";
+    const w = Math.max(1.5, i.value / max * 100);
+    return '<div class="rk-name' + exo + '">' + esc(i.vendor) + " · " + esc(i.cls) + "</div>"
+      + '<div class="rk-track"><div class="rk-bar' + exo + (i.short ? " is-short" : "")
+      + '" style="width:' + w.toFixed(2) + '%"></div></div>'
+      + '<div class="rk-val' + exo + '">' + fmtU(i.value) + " €</div>";
+  }).join("");
+}
+
+/* ---------------- sorting ---------------- */
+
+/* Rows a vendor does not price sort last in both directions; ties fall back to the name,
+   so the order is stable whichever column is chosen. */
+function sortRows(rows, sortVal, SORT){
+  if(!SORT.col) return rows;
+  const get = sortVal[SORT.col];
+  if(!get) return rows;
+  return rows.slice().sort((a, b) => {
+    const x = get(a), y = get(b);
+    if(typeof x === "string") return SORT.dir * x.localeCompare(y);
+    const xa = x === null || x === undefined ? Infinity : x;
+    const ya = y === null || y === undefined ? Infinity : y;
+    if(xa === ya) return (a.vendor + a.cls).localeCompare(b.vendor + b.cls);
+    return SORT.dir * (xa - ya);
+  });
+}
+
+function applyAriaSort(SORT){
+  [...document.querySelectorAll("th.sortable")].forEach(th => {
+    th.setAttribute("aria-sort",
+      th.dataset.sort === SORT.col ? (SORT.dir === 1 ? "ascending" : "descending") : "none");
+  });
+}
+
+/* ---------------- wiring ---------------- */
+
+function stampFx(){
+  document.getElementById("stamp-fx").textContent = FX_NOTE.replace(/^ECB [\d.]+: /, "");
+}
+
+function wireTabs(render){
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = Object.entries(PANELS).map(([k, p], i) =>
+    '<button class="tab" role="tab" data-k="' + k + '" aria-selected="' + (i === 0) + '">'
+    + esc(p.label) + "</button>").join("");
+  tabsEl.addEventListener("click", e => {
+    const b = e.target.closest(".tab"); if(!b) return;
+    S.panel = b.dataset.k;
+    [...tabsEl.children].forEach(t => t.setAttribute("aria-selected", t === b));
+    render();
+  });
+}
+
+/* Click a header to sort ascending, again to reverse, a third time to restore panel order. */
+function wireSort(SORT, render){
+  const head = document.getElementById("thead-row");
+  [...document.querySelectorAll("th.sortable")].forEach(th => { th.tabIndex = 0; });
+  head.addEventListener("keydown", e => {
+    if(e.key !== "Enter" && e.key !== " ") return;
+    const th = e.target.closest("th.sortable"); if(!th) return;
+    e.preventDefault(); th.click();
+  });
+  head.addEventListener("click", e => {
+    const th = e.target.closest("th.sortable"); if(!th) return;
+    const col = th.dataset.sort;
+    if(SORT.col === col && SORT.dir === 1)        SORT.dir = -1;
+    else if(SORT.col === col && SORT.dir === -1){ SORT.col = null; SORT.dir = 1; }
+    else                                        { SORT.col = col; SORT.dir = 1; }
+    render();
+  });
+  document.getElementById("unsort").addEventListener("click", () => {
+    SORT.col = null; SORT.dir = 1; render();
+  });
+}
+
+/* bindings: { inputId: [stateKey, isNumber] } */
+function bindControls(bindings, render){
+  for(const [id, [key, isNum]] of Object.entries(bindings)){
+    const el = document.getElementById(id);
+    el.addEventListener("input", () => {
+      S[key] = isNum ? (parseFloat(el.value) || 0) : el.value;
+      render();
+    });
+  }
+}
+
+/* defaults: { inputId: value } for the form; state: the matching slice of S.
+   `extra` restores anything that is not a plain input (segmented buttons, filters). */
+function wireReset(defaults, state, render, extra){
+  document.getElementById("reset").addEventListener("click", () => {
+    for(const [id, v] of Object.entries(defaults)) document.getElementById(id).value = v;
+    Object.assign(S, JSON.parse(JSON.stringify(state)));
+    if(extra) extra();
+    render();
+  });
+}
+
+// File storage price dataset — observed 2026-10-29 from official vendor pages and price feeds.
+// Managed shared file systems: the AWS EFS shape — mounted over NFS or SMB by several instances at once.
+// Capacity rates are in the vendor's own currency, per the vendor's own unit, per hour ('h'),
+// per 30-day month ('d30') or per month ('m').
+const FX = { EUR: 1, USD: 0.898230, CHF: 1.081432 }; // EUR per 1 unit — ECB 2026-10-28 (frankfurter.dev)
+const FX_NOTE = "ECB 28.10.2026: 1 EUR = 1.1133 USD = 0.9247 CHF";
+const GIB = 1.073741824; // billable decimal GB per physical GiB
+
+const T = (upTo, r) => ({ upTo, r }); // upTo = cumulative threshold, ascending
+const INF = Infinity;
+
+// billedOn: "stored"      — the capacity rate applies to the bytes actually held
+//           "provisioned" — it applies to the size of the share, empty or full
+// minGiB:   the smallest share the vendor will sell; a smaller requirement is billed at this size
+// iops/tput: null when performance is included in the capacity rate, otherwise a charge with its
+//           own floor. `min` is the least the vendor lets you provision, not a free allowance.
+// access:   per-GiB read and write charges (what AWS calls Elastic Throughput, and the IA and
+//           Archive access charges on top of it)
+// ops:      a published per-operation charge that cannot be monetised without an I/O-size
+//           assumption. Shown, never estimated; rows carrying one are costed as a floor.
+
+const ROWS = [
+  /* ---------------- AWS EFS ---------------- */
+  { id:"efs-std", vendor:"AWS EFS", cls:"Standard · Elastic Throughput", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"stored",
+    rateNote:"no minimum fee, no setup charge — billed on the bytes actually held",
+    minGiB:0, maxGiB:null,
+    iops:null, tput:null,
+    access:{ read:0.04, write:0.07, cur:"USD", unit:"GiB",
+             note:"Elastic Throughput, the default mode: $0.04/GiB read, $0.07/GiB written" },
+    snap:null, snapNote:"EFS Backup is billed through AWS Backup, a separate service",
+    perf:{ iops:"elastic", mbs:"elastic", note:"scales automatically to tens of GB/s and hundreds of thousands of IOPS" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"≥3 AZ", sla:"99.99 %", src:"aws.amazon.com/efs/pricing" },
+  { id:"efs-prov", vendor:"AWS EFS", cls:"Standard · Provisioned Throughput", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"stored",
+    rateNote:"same storage rate; throughput bought up front instead of per GiB transferred",
+    minGiB:0, maxGiB:null,
+    iops:null,
+    tput:{ min:0, per:"m", rate:7.20, freePerGiB:50/1024,
+           note:"$7.20 per MiB/s-month, charged only above the 50 MiB/s per TiB that Standard storage already includes" },
+    access:null,
+    snap:null, snapNote:"EFS Backup is billed through AWS Backup, a separate service",
+    perf:{ iops:"elastic", mbs:"provisioned", note:"the stored volume already entitles you to 50 MiB/s per TiB; only throughput beyond that is billed" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"≥3 AZ", sla:"99.99 %", src:"aws.amazon.com/efs/pricing" },
+  { id:"efs-ia", vendor:"AWS EFS", cls:"Standard-IA", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.0266, billedOn:"stored",
+    minGiB:0, maxGiB:null,
+    iops:null, tput:null,
+    access:{ read:0.052, write:0.082, cur:"USD", unit:"GiB",
+             note:"$0.012/GiB IA access on top of Elastic Throughput; the write figure is the tiering charge for data moved into the class" },
+    snap:null, snapNote:"through AWS Backup",
+    perf:{ iops:"elastic", mbs:"elastic", note:"milliseconds latency; minimum billable file size 128 KiB" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"≥3 AZ", src:"aws.amazon.com/efs/pricing" },
+  { id:"efs-arch", vendor:"AWS EFS", cls:"Archive", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.01, billedOn:"stored",
+    rateNote:"90-day minimum storage duration",
+    minGiB:0, maxGiB:null,
+    iops:null, tput:null,
+    access:{ read:0.076, write:0.106, cur:"USD", unit:"GiB",
+             note:"$0.036/GiB Archive access on top of Elastic Throughput; the write figure is the tiering charge for data moved into the class" },
+    snap:null, snapNote:"through AWS Backup",
+    perf:{ iops:"elastic", mbs:"elastic", note:"for data read a few times a year; minimum billable file size 128 KiB" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"≥3 AZ", src:"aws.amazon.com/efs/pricing" },
+  { id:"efs-1z", vendor:"AWS EFS", cls:"One Zone", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.192, billedOn:"stored",
+    minGiB:0, maxGiB:null,
+    iops:null, tput:null,
+    access:{ read:0.04, write:0.07, cur:"USD", unit:"GiB", note:"Elastic Throughput" },
+    snap:null, snapNote:"through AWS Backup",
+    perf:{ iops:"elastic", mbs:"elastic" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"1 AZ", src:"aws.amazon.com/efs/pricing" },
+  { id:"efs-1z-ia", vendor:"AWS EFS", cls:"One Zone-IA", region:"eu-central-1 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.0142, billedOn:"stored",
+    minGiB:0, maxGiB:null,
+    iops:null, tput:null,
+    access:{ read:0.052, write:0.082, cur:"USD", unit:"GiB", note:"IA access plus Elastic Throughput; the write figure is the tiering charge" },
+    snap:null, snapNote:"through AWS Backup",
+    perf:{ iops:"elastic", mbs:"elastic", note:"minimum billable file size 128 KiB" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFSv4.1", az:"1 AZ", src:"aws.amazon.com/efs/pricing" },
+
+  /* ---------------- AZURE FILES ---------------- */
+  { id:"azf-ssd-lrs", vendor:"Azure Files", cls:"Provisioned v2 SSD LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"h", rate:0.000196, billedOn:"provisioned",
+    rateNote:"storage, IOPS and throughput are provisioned and billed separately",
+    minGiB:32, maxGiB:262144,
+    iops:{ min:3000, per:"h", rate:0.000053, note:"every provisioned IOPS is charged; 3,000 is the least you may buy" },
+    tput:{ min:100, per:"h", rate:0.000077, note:"every provisioned MiB/s is charged; 100 is the least you may buy" },
+    access:null,
+    snap:{ rate:0.000196, cur:"USD", unit:"GiB", bill:"h", note:"snapshot usage beyond the provisioned size" },
+    perf:{ iops:0, mbs:0, note:"nothing is included — Azure recommends 3,000 + 1 IOPS per provisioned GiB" },
+    max:{ iops:102400, mbs:10340, size:262144 },
+    proto:"SMB · NFSv4.1", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-ssd-zrs", vendor:"Azure Files", cls:"Provisioned v2 SSD ZRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"h", rate:0.000245, billedOn:"provisioned",
+    minGiB:32, maxGiB:262144,
+    iops:{ min:3000, per:"h", rate:0.000066 },
+    tput:{ min:100, per:"h", rate:0.000097 },
+    access:null,
+    snap:{ rate:0.000245, cur:"USD", unit:"GiB", bill:"h" },
+    perf:{ iops:0, mbs:0, note:"nothing included; same minimums as LRS" },
+    max:{ iops:102400, mbs:10340, size:262144 },
+    proto:"SMB · NFSv4.1", az:"3 AZ", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-hdd-lrs", vendor:"Azure Files", cls:"Provisioned v2 HDD LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"h", rate:0.000013, billedOn:"provisioned",
+    minGiB:32, maxGiB:262144,
+    iops:{ min:500, per:"h", rate:0.000072, note:"every provisioned IOPS is charged; 500 is the least you may buy" },
+    tput:{ min:60, per:"h", rate:0.000107, note:"every provisioned MiB/s is charged; 60 is the least you may buy" },
+    access:null,
+    snap:{ rate:0.000013, cur:"USD", unit:"GiB", bill:"h" },
+    perf:{ iops:0, mbs:0, note:"capacity is nearly free; the IOPS line is where the money is" },
+    max:{ iops:50000, mbs:5120, size:262144 },
+    proto:"SMB", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-hdd-zrs", vendor:"Azure Files", cls:"Provisioned v2 HDD ZRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"h", rate:0.000016, billedOn:"provisioned",
+    minGiB:32, maxGiB:262144,
+    iops:{ min:500, per:"h", rate:0.000089 },
+    tput:{ min:60, per:"h", rate:0.000133 },
+    access:null,
+    snap:{ rate:0.000016, cur:"USD", unit:"GiB", bill:"h" },
+    perf:{ iops:0, mbs:0 },
+    max:{ iops:50000, mbs:5120, size:262144 },
+    proto:"SMB", az:"3 AZ", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-prem-lrs", vendor:"Azure Files", cls:"Premium (provisioned v1) LRS", region:"Germany West Central",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.192, billedOn:"provisioned",
+    rateNote:"the older model: IOPS and throughput follow the provisioned size and are not billed separately",
+    minGiB:100, maxGiB:102400,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.163, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:"size", mbs:"size", note:"baseline IOPS = 3,000 + 1 per provisioned GiB; throughput = 100 + 0.1 MiB/s per GiB" },
+    max:{ iops:102400, mbs:10340, size:102400 },
+    proto:"SMB · NFSv4.1", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-txn-lrs", vendor:"Azure Files", cls:"Transaction optimised LRS", region:"Germany West Central",
+    cur:"USD", unit:"GB", bill:"m", rate:0.0577, billedOn:"stored",
+    rateNote:"pay-as-you-go: billed on the bytes held, plus every transaction",
+    minGiB:0, maxGiB:102400,
+    iops:null, tput:null, access:null,
+    ops:{ note:"$0.015 per 10,000 writes and lists, $0.0015 per 10,000 reads and protocol operations" },
+    snap:null, snapNote:"charged at the same per-GB rate as the share",
+    perf:{ iops:"burst", mbs:"burst", note:"no provisioned performance; the share bursts" },
+    max:{ iops:20000, mbs:300, size:102400 },
+    proto:"SMB", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-hot-lrs", vendor:"Azure Files", cls:"Hot LRS (pay-as-you-go)", region:"Germany West Central",
+    cur:"USD", unit:"GB", bill:"m", rate:0.0271, billedOn:"stored",
+    rateNote:"pay-as-you-go: billed on the bytes held, plus every transaction",
+    minGiB:0, maxGiB:102400,
+    iops:null, tput:null, access:null,
+    ops:{ note:"$0.0702 per 10,000 writes and lists, $0.00559 per 10,000 reads" },
+    snap:null, snapNote:"charged at the same per-GB rate as the share",
+    perf:{ iops:"burst", mbs:"burst" },
+    max:{ iops:20000, mbs:300, size:102400 },
+    proto:"SMB", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+  { id:"azf-cool-lrs", vendor:"Azure Files", cls:"Cool LRS (pay-as-you-go)", region:"Germany West Central",
+    cur:"USD", unit:"GB", bill:"m", rate:0.015, billedOn:"stored",
+    rateNote:"pay-as-you-go, plus a retrieval charge on every byte read",
+    minGiB:0, maxGiB:102400,
+    iops:null, tput:null,
+    access:{ read:0.01, write:0, cur:"USD", unit:"GB", note:"$0.01 per GB retrieved" },
+    ops:{ note:"$0.13 per 10,000 writes, $0.013 per 10,000 reads, $0.0702 per 10,000 lists" },
+    snap:null, snapNote:"charged at the same per-GB rate as the share",
+    perf:{ iops:"burst", mbs:"burst" },
+    max:{ iops:20000, mbs:300, size:102400 },
+    proto:"SMB", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
+
+  /* ---------------- GOOGLE FILESTORE ---------------- */
+  { id:"gfs-basic-hdd", vendor:"Google Filestore", cls:"Basic HDD", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.19, billedOn:"provisioned",
+    rateNote:"the per-instance fee below 1 TiB is waived once the instance reaches 1 TiB",
+    minGiB:1024, maxGiB:65434,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m", note:"Filestore backups" },
+    perf:{ iops:"fixed", mbs:"fixed", note:"standard fixed performance, scaling with capacity" },
+    max:{ iops:null, mbs:null, size:65434 },
+    proto:"NFSv3", az:"zonal", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-basic-ssd", vendor:"Google Filestore", cls:"Basic SSD", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"provisioned",
+    rateNote:"smallest instance is 2.5 TiB — the highest capacity floor on this page",
+    minGiB:2560, maxGiB:65434,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:"fixed", mbs:"fixed", note:"premium fixed performance" },
+    max:{ iops:null, mbs:null, size:65434 },
+    proto:"NFSv3", az:"zonal", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-zonal", vendor:"Google Filestore", cls:"Zonal", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.30, billedOn:"provisioned",
+    minGiB:1024, maxGiB:102400,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:"fixed", mbs:"fixed", note:"performance scales with capacity unless custom performance is switched on" },
+    max:{ iops:null, mbs:null, size:102400 },
+    proto:"NFSv3 · NFSv4.1", az:"zonal", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-zonal-cp", vendor:"Google Filestore", cls:"Zonal · custom performance", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.144, billedOn:"provisioned",
+    baseFee:{ fee:24.00, cur:"USD", bill:"m", note:"$24.00 per instance per month" },
+    rateNote:"cheaper per GiB, but a per-instance fee and every IOPS billed",
+    minGiB:1024, maxGiB:102400,
+    iops:{ min:0, per:"m", rate:0.0174, note:"$0.0174 per provisioned IOPS-month" },
+    tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:0, mbs:"fixed", note:"IOPS are provisioned and charged; throughput follows them" },
+    max:{ iops:null, mbs:null, size:102400 },
+    proto:"NFSv3 · NFSv4.1", az:"zonal", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-regional", vendor:"Google Filestore", cls:"Regional", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.54, billedOn:"provisioned",
+    rateNote:"the only Google tier that starts below 1 TiB",
+    minGiB:100, maxGiB:102400,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:"fixed", mbs:"fixed" },
+    max:{ iops:null, mbs:null, size:102400 },
+    proto:"NFSv3 · NFSv4.1", az:"regional", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-regional-cp", vendor:"Google Filestore", cls:"Regional · custom performance", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.252, billedOn:"provisioned",
+    baseFee:{ fee:48.00, cur:"USD", bill:"m", note:"$48.00 per instance per month" },
+    minGiB:100, maxGiB:102400,
+    iops:{ min:0, per:"m", rate:0.0324, note:"$0.0324 per provisioned IOPS-month" },
+    tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:0, mbs:"fixed" },
+    max:{ iops:null, mbs:null, size:102400 },
+    proto:"NFSv3 · NFSv4.1", az:"regional", src:"cloud.google.com/filestore/pricing" },
+  { id:"gfs-ent", vendor:"Google Filestore", cls:"Enterprise (multishares)", region:"europe-west3 · Frankfurt",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.54, billedOn:"provisioned",
+    minGiB:1024, maxGiB:10240,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
+    perf:{ iops:"fixed", mbs:"fixed", note:"performance scales with capacity" },
+    max:{ iops:null, mbs:null, size:10240 },
+    proto:"NFSv3 · NFSv4.1", az:"regional", src:"cloud.google.com/filestore/pricing" },
+
+  /* ---------------- OVHCLOUD ---------------- */
+  { id:"ovh-fs", vendor:"OVHcloud", cls:"File Storage", region:"3-AZ and 1-AZ regions",
+    cur:"EUR", unit:"GB?", bill:"h", rate:0.000194, billedOn:"provisioned",
+    rateNote:"the same rate in 3-AZ and 1-AZ regions — zone redundancy is not priced separately",
+    minGiB:150, maxGiB:10240,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.000059, cur:"EUR", unit:"GB?", bill:"h", note:"billed on the space the snapshot uses" },
+    perf:{ iops:16000, mbs:128, note:"24 IOPS per provisioned GiB, up to 16,000; up to 128 MiB/s" },
+    max:{ iops:16000, mbs:128, size:10240 },
+    proto:"NFSv3 · OpenStack Manila", az:"3 AZ or 1 zone", sla:"99.9 %",
+    src:"ovhcloud.com/public-cloud/file-storage" },
+
+  /* ---------------- SCALEWAY ---------------- */
+  { id:"scw-fs", vendor:"Scaleway", cls:"File System", region:"fr-par",
+    cur:"EUR", unit:"GB?", bill:"h", rate:0.000221, billedOn:"provisioned",
+    rateNote:"the price page prints “€0.000221/HOUR” with no unit; the per-GB reading comes from its legal notice",
+    minGiB:25, maxGiB:51200,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:25000, mbs:200,
+           note:"1,000 IOPS baseline +12 per provisioned GB to 2 TB, up to 25,000; 4 MB/s baseline +0.1 per GB, up to 200 MB/s" },
+    max:{ iops:25000, mbs:200, size:51200 },
+    proto:"NFS", az:"1 zone · triple replication", src:"scaleway.com/pricing/storage" },
+
+  /* ---------------- IONOS ---------------- */
+  { id:"ion-nfs", vendor:"IONOS", cls:"Network File Storage", region:"Germany · Spain · France · UK · USA",
+    cur:"EUR", unit:"TB?", bill:"d30", rate:154.00, billedOn:"provisioned",
+    rateNote:"€154.00 per TB per 30 days — quoted per TB, with no decimal or binary basis stated",
+    minGiB:2048, maxGiB:43008,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:null, mbs:null, note:"no IOPS or throughput figure published" },
+    max:{ iops:null, mbs:null, size:43008 },
+    proto:"NFS", az:"not published for NFS", src:"cloud.ionos.de/preise" },
+
+  /* ---------------- STACKIT ---------------- */
+  { id:"st-std", vendor:"STACKIT", cls:"File Storage Standard", region:"EU01 · Germany South",
+    cur:"EUR", unit:"GB?", bill:"h", rate:0.00031135735, billedOn:"provisioned",
+    minGiB:null, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:null, mbs:null, note:"no IOPS or throughput figure published for any of the three tiers" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFS", az:"not published · a 2-AZ “Metro” version is advertised but not priced",
+    src:"stackit.com — price list v1.0.44 (06.10.2026)" },
+  { id:"st-prem", vendor:"STACKIT", cls:"File Storage Premium", region:"EU01 · Germany South",
+    cur:"EUR", unit:"GB?", bill:"h", rate:0.00050547002, billedOn:"provisioned",
+    minGiB:null, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:null, mbs:null, note:"nothing published to say what the extra 62 % buys" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFS", az:"not published · a 2-AZ “Metro” version is advertised but not priced",
+    src:"stackit.com — price list v1.0.44 (06.10.2026)" },
+  { id:"st-ultra", vendor:"STACKIT", cls:"File Storage Ultra", region:"EU01 · Germany South",
+    cur:"EUR", unit:"GB?", bill:"h", rate:0.00089765684, billedOn:"provisioned",
+    minGiB:null, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:null, mbs:null },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFS", az:"not published · a 2-AZ “Metro” version is advertised but not priced",
+    src:"stackit.com — price list v1.0.44 (06.10.2026)" },
+
+  /* ---------------- UPCLOUD ---------------- */
+  { id:"upc-fs", vendor:"UpCloud", cls:"File Storage", region:"DE-FRA1 · FI-HEL · NL-AMS · SE-STO · DK-CPH",
+    cur:"EUR", unit:"GiB", bill:"d30", rate:0.15, billedOn:"provisioned",
+    rateNote:"€37.50/month for the smallest share, then €0.15 per GiB; the price table writes “250 GB” in the size column and “per GiB” in the price column",
+    minGiB:250, maxGiB:25600,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"no snapshot line on the price list",
+    perf:{ iops:null, mbs:null, note:"no IOPS or throughput figure published; up to 50 shares per instance, 16 TiB per file, 50 GiB increments" },
+    max:{ iops:null, mbs:null, size:25600 },
+    proto:"NFS", az:"managed redundancy, model not published", sla:"99.999 % uptime",
+    src:"upcloud.com/pricing" },
+
+  /* ---------------- DIGITALOCEAN ---------------- */
+  { id:"do-nfs-std", vendor:"DigitalOcean", cls:"Network File Storage · Standard", region:"AMS (Amsterdam) — no Frankfurt region",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.15, billedOn:"provisioned",
+    rateNote:"flat price across every supported region",
+    minGiB:50, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.06, cur:"USD", unit:"GiB", bill:"m", note:"billed on the restorable file size" },
+    perf:{ iops:null, mbs:119, note:"“up to 1 Gbps per share” — no IOPS figure published; 1 Gbps is 119 MiB/s" },
+    max:{ iops:null, mbs:119, size:null },
+    proto:"NFSv3 · NFSv4", az:"not published for NFS",
+    src:"digitalocean.com/pricing/network-file-storage" },
+  { id:"do-nfs-hp", vendor:"DigitalOcean", cls:"Network File Storage · High performance", region:"AMS (Amsterdam) — no Frankfurt region",
+    cur:"USD", unit:"GiB", bill:"m", rate:0.30, billedOn:"provisioned",
+    minGiB:500, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:{ rate:0.06, cur:"USD", unit:"GiB", bill:"m", note:"billed on the restorable file size" },
+    perf:{ iops:null, mbs:954, note:"“throughput starting from 8 Gbps” — no IOPS figure published; 8 Gbps is 954 MiB/s" },
+    max:{ iops:null, mbs:954, size:null },
+    proto:"NFSv3 · NFSv4", az:"not published for NFS",
+    src:"digitalocean.com/pricing/network-file-storage" },
+
+  /* ---------------- T CLOUD PUBLIC ---------------- */
+  { id:"tc-sfs", vendor:"T Cloud Public", cls:"Scalable File Service", region:"Germany (formerly Open Telekom Cloud)",
+    cur:"EUR", unit:"GiB", bill:"m", rate:null, billedOn:"stored",
+    rateNote:"no rate card — calculator and console only. The pricing-model page states only that SFS follows the EVS model and that, unlike EVS, “only the actual stored data is billed”.",
+    minGiB:null, maxGiB:null,
+    iops:null, tput:null, access:null,
+    snap:null, snapNote:"not published",
+    perf:{ iops:null, mbs:null, note:"no performance figures published alongside the prices" },
+    max:{ iops:null, mbs:null, size:null },
+    proto:"NFS", az:"not published for SFS",
+    src:"t-cloud-public.com/prices/pricing-models/storage" }
+];
+
+const PANELS = {
+  actuel: { label:"Core set",
+    sub:"The managed file systems most often shortlisted in Europe, one row per vendor's mainstream tier. Exoscale has no file storage product, so this is the one benchmark here with no Exoscale row.",
+    ids:["efs-std","azf-ssd-lrs","azf-hot-lrs","gfs-zonal","ovh-fs","scw-fs","upc-fs","do-nfs-std","ion-nfs","st-prem"] },
+  hyper: { label:"Hyperscalers",
+    sub:"AWS, Azure and Google in their Frankfurt-region equivalents, every tier and every billing model.",
+    ids:["efs-std","efs-prov","efs-ia","efs-arch","efs-1z","efs-1z-ia",
+         "azf-ssd-lrs","azf-ssd-zrs","azf-hdd-lrs","azf-hdd-zrs","azf-prem-lrs","azf-txn-lrs","azf-hot-lrs","azf-cool-lrs",
+         "gfs-basic-hdd","gfs-basic-ssd","gfs-zonal","gfs-zonal-cp","gfs-regional","gfs-regional-cp","gfs-ent"] },
+  eu: { label:"European providers",
+    sub:"The alternatives to the hyperscalers, shown against the regions each one actually operates. UpCloud reaches Frankfurt; DigitalOcean's only European region for this product is Amsterdam.",
+    ids:["ovh-fs","scw-fs","upc-fs","ion-nfs","st-std","st-prem","st-ultra","do-nfs-std","do-nfs-hp","tc-sfs"] }
+};
+
+/* ---------------- calculation engine ----------------
+ *
+ * One scenario: you need to hold `stored` GiB on a shared file system, read `read` GiB and
+ * write `written` GiB a month out of it, and you want `iops` IOPS and `mbs` MiB/s.
+ *
+ * What each vendor then charges splits four ways:
+ *   capacity    — on the bytes held, or on the size of the share, whichever the vendor bills
+ *   performance — IOPS and throughput, where they are a separate line item with their own floor
+ *   access      — per-GiB read and write charges (AWS calls this Elastic Throughput)
+ *   snapshots   — where the vendor sells them
+ *
+ * A vendor that will not sell a share smaller than its minimum bills that minimum, which is
+ * the single biggest thing the headline rate hides on this page.
+ */
+const S = { stored:2048, read:1024, written:256, iops:3000, mbs:100,
+            hours:730, unitMode:"decimal", panel:"actuel", metric:"eff" };
+
+/* uf() in shared/ui.js covers GiB, GB and an unstated GB. IONOS quotes a price per TB and
+   never says which TB, so both the TB→GB step and the GiB→GB step follow the same selector. */
+function ufc(unit){
+  if(unit === "TB")  return GIB / 1000;
+  if(unit === "TB?") return S.unitMode === "decimal" ? GIB / 1000 : 1 / 1024;
+  return uf(unit);
+}
+
+/* The capacity a vendor actually bills: the bytes held, or the share size, never below the
+   smallest share they sell. */
+function billedGiB(r){
+  const floor = r.minGiB || 0;
+  return Math.max(S.stored, floor);
+}
+function overMinimum(r){
+  return (r.minGiB || 0) > S.stored;
+}
+
+function capacityCost(r){
+  if(r.rate === null) return null;
+  const base = r.baseFee ? r.baseFee.fee * hf(r.baseFee.bill) * FX[r.baseFee.cur] : 0;
+  return base + billedGiB(r) * ufc(r.unit) * r.rate * hf(r.bill) * FX[r.cur];
+}
+/* Performance charged separately is bought at the target, less whatever the stored volume
+   already entitles you to, and never below the vendor's floor. `min` is the least they will
+   sell; `freePerGiB` is a real allowance that grows with the data held — AWS includes
+   50 MiB/s per TiB of Standard storage and bills Provisioned Throughput only above it. */
+function perfCost(spec, target, r){
+  if(!spec) return 0;
+  const bought = Math.max(target - includedPerf(spec, r), spec.min || 0, 0);
+  return bought * spec.rate * hf(spec.per) * FX[r.cur];
+}
+function includedPerf(spec, r){
+  return spec && spec.freePerGiB ? spec.freePerGiB * billedGiB(r) : 0;
+}
+function accessCost(r){
+  if(!r.access) return 0;
+  const f = ufc(r.access.unit);
+  return (S.read * f * r.access.read + S.written * f * r.access.write) * FX[r.access.cur || r.cur];
+}
+function snapCost(r){ return 0; }   // snapshots are shown per GiB, not costed into the scenario
+
+function scenario(r){
+  const parts = [capacityCost(r), perfCost(r.iops, S.iops, r), perfCost(r.tput, S.mbs, r), accessCost(r)];
+  const unpriced = parts.some(p => p === null);
+  const total = parts.reduce((a, p) => a + (p || 0), 0);
+  return {
+    total, hasPrice: r.rate !== null,
+    /* a floor, not a price: either a component is unpublished, or a published per-operation
+       charge cannot be monetised without assuming an I/O size */
+    partial: unpriced || !!r.ops,
+    short: shortfall(r)
+  };
+}
+function shortfall(r){
+  const out = [];
+  if(r.max.iops != null && S.iops > r.max.iops) out.push("tops out at " + num(r.max.iops) + " IOPS");
+  if(r.max.mbs  != null && S.mbs  > r.max.mbs)  out.push("tops out at " + num(r.max.mbs) + " MiB/s");
+  if(r.max.size != null && S.stored > r.max.size) out.push("largest share is " + num(r.max.size) + " GiB");
+  return out;
+}
+
+/* Both chart metrics are per GiB *asked for*, not per GiB billed — otherwise a vendor's
+   capacity floor would vanish into the denominator instead of showing up as a higher price. */
+const capUnit = r => { const c = capacityCost(r); return c === null ? null : c / S.stored; };
+const effUnit = r => { const sc = scenario(r); return sc.hasPrice ? sc.total / S.stored : null; };
+
+/* ---------------- formatting ---------------- */
+function publishedRate(r){
+  if(r.rate === null) return '<span class="np">not published</span>';
+  const u = r.unit === "GiB" ? "GiB" : r.unit.startsWith("TB") ? "TB" : "GB";
+  const suffix = r.bill === "h" ? "·h" : r.bill === "d30" ? "/30 d" : "-month";
+  const head = r.rate + " " + sym(r.cur) + "/" + u + suffix;
+  return r.baseFee ? head + " + " + sym(r.baseFee.cur) + r.baseFee.fee.toFixed(2) + "/instance-month" : head;
+}
+function billedCell(r){
+  if(r.rate === null) return "—";
+  const on = r.billedOn === "stored" ? "bytes held" : "share size";
+  const floor = r.minGiB ? num(r.minGiB) + " GiB minimum" : (r.minGiB === 0 ? "no minimum" : "not published");
+  const warn = overMinimum(r) ? ' <span class="short" title="The scenario asks for less than this vendor will sell, so the minimum is what gets billed">&#9650;</span>' : "";
+  return '<span class="chip">' + esc(on) + "</span>" + warn
+       + '<span class="sub" style="text-align:left">' + esc(floor)
+       + (overMinimum(r) ? " — billing " + num(billedGiB(r)) + " GiB" : "") + "</span>";
+}
+function perfChargeCell(spec, r, unitLabel){
+  if(!spec) return '<span class="free">included</span>';
+  const perMonth = spec.rate * hf(spec.per) * FX[r.cur];
+  const incl = includedPerf(spec, r);
+  const qualifier = incl ? num(Math.round(incl)) + " included with the data held"
+                   : spec.min ? num(spec.min) + " minimum"
+                   : "no minimum";
+  return perMonth.toFixed(4) + " €"
+       + '<span class="sub" style="text-align:left">per ' + unitLabel + ", " + esc(qualifier) + "</span>";
+}
+function accessCell(r){
+  if(!r.access) return '<span class="free">included</span>';
+  const f = ufc(r.access.unit), fx = FX[r.access.cur || r.cur];
+  return (r.access.read * f * fx).toFixed(4) + " / " + (r.access.write * f * fx).toFixed(4) + " €";
+}
+function perfCell(r){
+  const p = r.perf || {};
+  const word = { elastic:"scales automatically", provisioned:"bought up front",
+                 fixed:"fixed by the tier", size:"follows the share size", burst:"bursting only" };
+  const one = v => v === null || v === undefined ? "—"
+    : typeof v === "string" ? (word[v] || v)
+    : v === 0 ? "none included" : num(v);
+  const line = (typeof p.iops === "string" && p.iops === p.mbs)
+    ? one(p.iops)
+    : one(p.iops) + (typeof p.iops === "number" ? " IOPS" : "") + " · "
+      + one(p.mbs) + (typeof p.mbs === "number" ? " MiB/s" : "");
+  return '<span class="chip">' + esc(line) + "</span>"
+       + (p.note ? '<span class="sub" style="text-align:left">' + esc(p.note) + "</span>" : "");
+}
+
+/* ---------------- rendering ---------------- */
+const SORT = { col:null, dir:1 };
+function render(){
+  const panel = PANELS[S.panel];
+  let rows = panel.ids.map(id => ROWS.find(r => r.id === id));
+  document.getElementById("panel-sub").textContent = panel.sub;
+  document.getElementById("stamp-hours").textContent = S.hours + " h/month";
+
+  const cap = S.metric === "cap";
+  document.getElementById("rank-title").textContent =
+    (cap ? "Capacity alone — € per stored GiB per month, "
+         : "Effective price of the scenario — € per stored GiB per month, ")
+    + num(S.stored) + " GiB held"
+    + (cap ? ", performance and access charges excluded"
+           : " at " + num(S.iops) + " IOPS and " + num(S.mbs) + " MiB/s, "
+             + num(S.read) + " GiB read and " + num(S.written) + " GiB written");
+
+  /* A bar is hatched when its number is not like-for-like with the rest: the vendor cannot
+     deliver the scenario, will not sell a share this small, or has a published charge that
+     cannot be monetised — in which case the bar is a floor and an unhatched one would be
+     quietly treating the missing component as zero. */
+  const notLikeForLike = r => shortfall(r).length > 0 || overMinimum(r) || scenario(r).partial;
+
+  // ranking
+  const metric = cap ? capUnit : effUnit;
+  renderRanking("rank", rows.filter(r => r.rate !== null)
+    .map(r => ({ vendor:r.vendor, cls:r.cls, value:metric(r), exo:r.brand, short:notLikeForLike(r) }))
+    .sort((a, b) => a.value - b.value));
+
+  const flagged = rows.filter(r => r.rate !== null && notLikeForLike(r)).length;
+  const metricNote = cap
+    ? "Capacity alone. IOPS, throughput and per-GiB access charges are excluded, so the vendors that bill performance separately look cheaper here than they invoice."
+    : "Capacity plus provisioned IOPS and throughput plus per-GiB read and write charges, divided by the GiB you asked to hold.";
+  document.getElementById("legend").innerHTML = metricNote + (flagged
+    ? " <b>Hatched bars</b> are not like-for-like: the vendor either cannot deliver the requested performance, will not sell a share this small, or charges per operation on top of what is shown. Those bars are floors."
+    : " Every row shown can deliver the requested configuration.");
+
+  // sorting
+  const sortVal = {
+    vendor:  r => r.vendor + " " + r.cls,
+    cls:     r => r.cls,
+    capunit: r => capUnit(r),
+    effunit: r => effUnit(r),
+    billed:  r => r.rate === null ? null : billedGiB(r),
+    iops:    r => r.iops ? r.iops.rate * hf(r.iops.per) * FX[r.cur] : 0,
+    tput:    r => r.tput ? r.tput.rate * hf(r.tput.per) * FX[r.cur] : 0,
+    access:  r => r.access ? (r.access.read + r.access.write) * ufc(r.access.unit) * FX[r.access.cur || r.cur] : 0,
+    snap:    r => r.snap ? r.snap.rate * hf(r.snap.bill) * ufc(r.snap.unit) * FX[r.snap.cur] : null,
+    cost:    r => { const sc = scenario(r); return sc.hasPrice ? sc.total : null; }
+  };
+  rows = sortRows(rows, sortVal, SORT);
+  applyAriaSort(SORT);
+
+  // table
+  document.getElementById("tbody").innerHTML = rows.map(r => {
+    const sc = scenario(r);
+    const trCls = [r.brand ? "is-exo" : "", (sc.short.length || overMinimum(r)) ? "is-short" : ""]
+      .filter(Boolean).join(" ");
+    const tr = trCls ? ' class="' + trCls + '"' : "";
+    const flag = (r.unit === "GB?" || r.unit === "TB?")
+      ? ' <span class="flag" title="Unit not stated by the vendor — converted according to the selector at the top of the page">&#9651;</span>' : "";
+    const snapCell = r.snap
+      ? (r.snap.rate * hf(r.snap.bill) * ufc(r.snap.unit) * FX[r.snap.cur]).toFixed(4) + " €"
+      : '<span class="np">' + esc(r.snapNote || "not offered") + "</span>";
+    const ops = r.ops ? ' <span class="np" title="' + esc(r.ops.note) + '">+ops</span>' : "";
+    const cost = !sc.hasPrice
+      ? '<span class="np">n/a</span>'
+      : (sc.partial ? '<span class="np">≥</span> ' : "") + "<b>" + fmtE(sc.total) + "</b>" + ops;
+    const shortMark = sc.short.length
+      ? ' <span class="short" title="' + esc(sc.short.join("; ")) + '">&#9888;</span>' : "";
+    return "<tr" + tr + ">"
+      + '<td class="key">' + esc(r.vendor) + "</td>"
+      + '<td class="cls">' + esc(r.cls) + shortMark + '<span class="sub">' + esc(r.region) + "</span>"
+        + '<span class="sub">' + esc(r.proto) + "</span></td>"
+      + "<td>" + publishedRate(r) + flag
+        + (r.rateNote ? '<span class="sub">' + esc(r.rateNote) + "</span>" : "") + "</td>"
+      + "<td>" + billedCell(r) + "</td>"
+      + '<td class="num">' + fmtU(capUnit(r)) + "</td>"
+      + '<td class="num big">' + fmtU(effUnit(r)) + "</td>"
+      + "<td>" + perfCell(r) + "</td>"
+      + '<td class="num">' + perfChargeCell(r.iops, r, "IOPS-month") + "</td>"
+      + '<td class="num">' + perfChargeCell(r.tput, r, "MiB/s-month") + "</td>"
+      + '<td class="num">' + accessCell(r)
+        + (r.access && r.access.note ? '<span class="sub" style="text-align:left">' + esc(r.access.note) + "</span>" : "") + "</td>"
+      + '<td class="num">' + snapCell
+        + (r.snap && r.snap.note ? '<span class="sub" style="text-align:left">' + esc(r.snap.note) + "</span>" : "") + "</td>"
+      + "<td>" + esc(r.az) + (r.sla ? '<span class="sub">SLA ' + esc(r.sla) + "</span>" : "") + "</td>"
+      + '<td class="num">' + cost + "</td>"
+      + "</tr>";
+  }).join("");
+}
+
+/* ---------------- interface ---------------- */
+const DEFAULTS = { "in-stored":2048, "in-read":1024, "in-written":256, "in-iops":3000,
+                   "in-mbs":100, "in-hours":730, "in-unit":"decimal" };
+const RESET_STATE = { stored:2048, read:1024, written:256, iops:3000, mbs:100,
+                      hours:730, unitMode:"decimal", metric:"eff" };
+
+stampFx();
+wireTabs(render);
+wireSort(SORT, render);
+bindControls({
+  "in-stored":  ["stored",  true], "in-read":    ["read",    true],
+  "in-written": ["written", true], "in-iops":    ["iops",    true],
+  "in-mbs":     ["mbs",     true], "in-hours":   ["hours",   true],
+  "in-unit":    ["unitMode", false]
+}, render);
+
+document.getElementById("metric").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  S.metric = b.dataset.x;
+  [...e.currentTarget.children].forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+});
+
+wireReset(DEFAULTS, RESET_STATE, render, () => {
+  [...document.getElementById("metric").children]
+    .forEach(b => b.setAttribute("aria-pressed", b.dataset.x === "eff"));
+});
+render();
+</script>
+</body>
+</html>

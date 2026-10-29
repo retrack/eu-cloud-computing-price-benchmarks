@@ -22,7 +22,7 @@ not share a dataset or a cost model.
 | `<benchmark>/data.js` | the dataset — one entry per vendor × class, plus `FX`, `FX_NOTE`, `PANELS` |
 | `<benchmark>/page.html` | the body markup: header, controls, table head, notes, sources |
 | `<benchmark>/page.js` | the cost model, the renderers, the wiring calls |
-| `<benchmark>/style.css` | product-specific CSS (optional; only block storage has one) |
+| `<benchmark>/style.css` | product-specific CSS (optional; none of the benchmarks needs one today) |
 | `<benchmark>/index.html` | generated; committed so a clone opens without a build |
 | `<benchmark>/README.md` | what it covers, its conventions, its known gaps |
 | `README.md` | public repository README and benchmark index |
@@ -40,9 +40,11 @@ then `<benchmark>/page.js` into one `<script>`. Helpers in `ui.js` read `S`, `GI
 at load time. Each `page.js` therefore ends by calling `stampFx()`, `wireTabs(render)`,
 `wireSort(SORT, render)`, `bindControls({...}, render)`, `wireReset(...)` and then `render()`.
 
-Anything shared between the two pages belongs in `shared/`, not copied into both. If a change
-to `ui.js` or `base.css` is only wanted on one page, that is a sign it belongs in the
-benchmark's own `page.js` or `style.css` instead.
+Anything a second benchmark would also want belongs in `shared/`, not copied into both — the
+ranking-metric toggle, the hatched-bar marking and the filter chips started life in
+`block-storage/style.css` and moved to `shared/base.css` the moment file storage wanted them.
+If a change to `ui.js` or `base.css` is only wanted on one page, that is a sign it belongs in
+the benchmark's own `page.js` or `style.css` instead.
 
 ---
 
@@ -102,13 +104,15 @@ The feeds that worked on 10 September 2026:
 
 | Vendor | Feed |
 |---|---|
-| AWS | Price List Bulk API: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/eu-central-1/index.csv` (280 MB — stream it through `grep`). Object storage: `https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/*.json`, key `regions["EU (Frankfurt)"]` |
+| AWS | Price List Bulk API: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/eu-central-1/index.csv` (280 MB — stream it through `grep`). File storage is the same API with the `AmazonEFS` offer code and is only a few kB. Object storage: `https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/*.json`, key `regions["EU (Frankfurt)"]` |
 | Azure | Retail Prices API, `https://prices.azure.com/api/retail/prices?currencyCode=USD&$filter=armRegionName eq 'germanywestcentral' and priceType eq 'Consumption' and productName eq '<product>'` |
-| Google | the pricing tables are serialised inside the HTML of `cloud.google.com/compute/disks-image-pricing`; split on the `"Frankfurt (europe-west3)",[2]` marker to get the monthly table |
-| OVHcloud | `https://eu.api.ovh.com/v1/order/catalog/public/cloud?ovhSubsidiary=DE` — `addons[].planCode` matching `volume`/`snapshot`, prices in units of 1e-8 EUR, net of the `taxRate` in `locale` |
+| Google | the pricing tables are serialised inside the HTML of `cloud.google.com/compute/disks-image-pricing` and `cloud.google.com/filestore/pricing`; split on the `"Frankfurt (europe-west3)",[2]` marker to get the monthly table. Filestore capacity floors come from `cloud.google.com/filestore/docs/service-tiers`, not from the price page |
+| OVHcloud | `https://eu.api.ovh.com/v1/order/catalog/public/cloud?ovhSubsidiary=DE` — `addons[].planCode` matching `volume`/`snapshot`/`share`, prices in units of 1e-8 EUR, net of the `taxRate` in `locale` |
 | Exoscale | `https://portal.exoscale.com/api/pricing/<product>` — the endpoint the price page's Angular controller calls. `blockstorage`, `sos`, and so on |
 | Hetzner | object storage: `website-price-api.hetzner.com`. Block storage: the price is an attribute on the `<ho-block-storage-calculator>` element of `hetzner.com/cloud/block-storage/`, and only appears when the page is fetched with a European locale |
 | STACKIT | the price list PDF linked from `stackit.com/en/prices` — run it through `pdftotext -layout` |
+| Scaleway | the price pages now answer a plain fetch with a bot challenge; read the rendered DOM, and open the per-product “Legal notice” before trusting a unit |
+| IONOS | `cloud.ionos.de/preise` renders server-side; the German page carries line items the English one does not |
 
 Anything you cannot confirm is `null` or `"not published"` — never an estimate. The pages
 render those as `not published` and mark the scenario cost with `≥`.
@@ -187,7 +191,52 @@ one class is never `"premium"` on our say-so. Use an array when a class genuinel
 several, as IONOS Essential does ("HDD/SSD") and T Cloud Public's five EVS classes do. Every
 row must carry both fields or it will vanish from the filter.
 
-For both files: add a new row's `id` to the right panel(s) in `PANELS` at the bottom, or it
+### 2c. Update `file-storage/data.js`
+
+Managed shared file systems split differently again: the fight is over what the capacity rate
+is applied to, and what the vendor will refuse to sell you.
+
+```js
+{ id:"azf-ssd-lrs", vendor:"Azure Files", cls:"Provisioned v2 SSD LRS", region:"Germany West Central",
+  cur:"USD", unit:"GiB",
+  bill:"h",             // "h" per hour | "m" per month | "d30" the price list quotes a 30-day month
+  rate:0.000196,        // capacity, per unit, per `bill` period; null = no public price
+  billedOn:"provisioned",          // "stored" = the bytes held | "provisioned" = the share, empty or full
+  minGiB:32,            // smallest share the vendor sells; 0 = none, null = not published
+  maxGiB:262144,
+  baseFee:null,         // OR a flat per-instance charge, e.g. Google custom performance
+  iops:{ min:3000, per:"h", rate:0.000053 },   // null = IOPS included in `rate`
+  tput:{ min:100, per:"h", rate:0.000077 },    // null = throughput included
+  access:null,          // OR per-GiB read/write charges, e.g. { read, write, cur, unit, note }
+  ops:null,             // a published per-operation charge that cannot be monetised
+  perf:{ iops:0, mbs:0, note:"…" },            // what the capacity rate includes, for display
+  max:{ iops:102400, mbs:10340, size:262144 }, // published ceilings, for the ⚠ check
+  snap:{ rate:0.000196, cur:"USD", unit:"GiB", bill:"h" },   // null = none offered
+  proto:"SMB · NFSv4.1", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" }
+```
+
+The shapes that matter:
+
+- **`billedOn` and `minGiB` together are the headline of this page.** A vendor billing
+  `provisioned` capacity charges `max(data held, minGiB)`, so asking for less than the floor
+  does not make the row cheaper — it makes the price per gigabyte worse, which is exactly how
+  the chart shows it. Both chart metrics divide by the GiB *asked for*, never the GiB billed.
+- **`min` on `iops`/`tput` is a floor, not an allowance.** It is the least the vendor will
+  sell. Azure Files provisioned v2 includes nothing and will not sell fewer than 3,000 IOPS
+  on SSD, so a 32 GiB share is dominated by its performance floor.
+- **`freePerGiB` on `iops`/`tput` is the opposite**: a real allowance that grows with the data
+  held. AWS includes 50 MiB/s per TiB of Standard storage and bills Provisioned Throughput
+  only above it — at 2 TiB and 100 MiB/s that charge is zero, and a model without
+  `freePerGiB` would overcharge AWS by the whole line.
+- **`unit` accepts `"TB?"`** for IONOS, which quotes per TB and never says which TB. Both the
+  TB→GB step and the GiB→GB step then follow the unit selector, which is why that row moves
+  10 % between the two assumptions rather than 7.4 %. The helper lives in `file-storage/page.js`,
+  not in `shared/ui.js`, because no other page has a TB-quoted vendor.
+- **`ops`** marks a published per-operation charge that cannot be turned into a monthly figure
+  without assuming an average I/O size. Those rows show `+ops`, their total is prefixed `≥`,
+  and their bar is hatched — an unhatched bar would be quietly treating the charge as zero.
+
+For every dataset: add a new row's `id` to the right panel(s) in `PANELS` at the bottom, or it
 will not appear anywhere.
 
 ### 3. Update the reading date
@@ -253,13 +302,20 @@ mkdir -p ../ghp/runs/$(date +%F)
 cp object-storage/index.html ../ghp/runs/$(date +%F)/index.html
 mkdir -p ../ghp/runs/block/$(date +%F)
 cp block-storage/index.html ../ghp/runs/block/$(date +%F)/index.html
+mkdir -p ../ghp/runs/file/$(date +%F)
+cp file-storage/index.html ../ghp/runs/file/$(date +%F)/index.html
 ```
 
 Each benchmark is its own series on that branch — object storage at
-`runs/<YYYY-MM-DD>/index.html`, block storage at `runs/block/<YYYY-MM-DD>/index.html` — with
-its own entry in `runs.json`, keyed so a trend dashboard does not mix provisioned-GiB prices
-with stored-GiB prices. They are not comparable numbers and must never share an axis. A
-benchmark added later gets its own `runs/<name>/` prefix on the same pattern.
+`runs/<YYYY-MM-DD>/index.html`, block storage at `runs/block/<YYYY-MM-DD>/index.html`, file
+storage at `runs/file/<YYYY-MM-DD>/index.html` — with its own entry under `series` in
+`runs.json`, keyed so a trend dashboard does not mix a euro per GiB *stored* with a euro per
+GiB *provisioned*. They are not comparable numbers and must never share an axis. A benchmark
+added later gets its own `runs/<name>/` prefix on the same pattern.
+
+Publish only the series whose prices you actually re-read. A run is a reading, not a rebuild:
+copying an unchanged page under a new date claims a freshness it does not have. Refreshing FX
+across every dataset does not make the other pages new readings.
 
 The repository was renamed from `eu-object-storage-benchmark`; GitHub redirects both the old
 repository URL and the old Pages URL, but new links should use the current name.
@@ -302,3 +358,18 @@ Block storage only:
 - The chart's **Capacity only** toggle drops IOPS, throughput and snapshots. It exists to show
   how far the shelf price sits from the bill, so keep both metrics on the same axis label and
   never present the capacity ranking without saying what it excludes.
+
+File storage only:
+
+- The capacity control is **data held**, not share size. A vendor billing provisioned capacity
+  is charged on `max(held, its minimum)`; one billing consumption is charged on what is held.
+  Which of the two a row does is a column on the page, not a footnote.
+- Both chart metrics divide by the GiB **asked for**, never the GiB billed, so a capacity floor
+  reads as a worse price per gigabyte instead of vanishing into the denominator.
+- Performance floors (`min`) and performance allowances (`freePerGiB`) are different fields and
+  must not be conflated. Azure sells no IOPS below its floor; AWS gives throughput away in
+  proportion to the data held.
+- Snapshots are shown per GiB but not costed into the scenario — snapshot volume needs a change
+  rate specific to the workload.
+- This is the one benchmark with no Exoscale row, because Exoscale has no file storage product.
+  Say so on the page rather than leaving a reader to wonder; an absent product is not a zero.
