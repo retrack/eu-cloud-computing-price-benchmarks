@@ -225,7 +225,7 @@ footer p{margin:0 0 8px}
   <div class="run-meta">
     <span>10 vendors · <b>31 file system classes</b></span>
     <span>FX <b>ECB 28.10.2026</b></span>
-    <span>commit <b>9b2eca0</b></span>
+    <span>commit <b>454bfa9</b></span>
   </div>
   <p class="run-note">
     First published file storage reading — managed shared file systems in the AWS EFS shape, mounted over NFS or
@@ -242,6 +242,14 @@ footer p{margin:0 0 8px}
     publishes 600 read IOPS between 1 and 10 TiB, so it cannot deliver the 3,000 the scenario asks for and is now
     marked ⚠. STACKIT sells capacity as a 500 GB to 20 TB resource pool, a floor that was recorded as not
     published, so shares below it were priced far too low. Every scenario total is unchanged.
+  </p>
+  <p class="run-note">
+    The same revision stopped reading a vendor's capacity range as binary when the vendor had not said so.
+    Scaleway's "25 GB to 50 TB" and STACKIT's "500 GB to 20 TB" now follow this page's unit selector exactly
+    as their rate already did, so under the decimal assumption those floors are 23 and 466 GiB rather than
+    25 and 500. UpCloud was checked and left alone: its price table writes "250 GB" in the size column, but
+    the feature list on the same page says "From 250 GiB to 25 TiB". Again no scenario total moves — both
+    floors sit far below the 2,048 GiB the scenario holds.
   </p>
   <span class="run-open">Open the reading →</span>
 </a>

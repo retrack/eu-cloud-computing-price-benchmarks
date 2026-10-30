@@ -18,7 +18,7 @@ floor. They are not comparable and must never share an axis.
 | `runs/<YYYY-MM-DD>/index.html` | one published **object storage** reading |
 | `runs/block/<YYYY-MM-DD>/index.html` | one published **block storage** reading |
 | `runs/file/<YYYY-MM-DD>/index.html` | one published **file storage** reading |
-| `runs.json` | machine-readable manifest: two series, one entry per run |
+| `runs.json` | machine-readable manifest: three series — `object`, `block`, `file` — one entry per run |
 | `.nojekyll` | serve the files as-is, no Jekyll processing |
 
 The object storage runs sit directly under `runs/` rather than `runs/object/` because that is
@@ -135,7 +135,9 @@ shows up as a worse price per gigabyte instead of vanishing into the denominator
 `short` resolves each vendor's published ceiling against the capacity being billed, because most
 of them are not flat numbers: OVHcloud and Scaleway sell performance with the gigabytes, Google
 quotes its scalable tiers per TiB, and Google Basic HDD publishes a different figure above 10 TiB.
-The capacity ceiling is `maxGiB`, not `max.size`, which no longer exists.
+The capacity ceiling is `maxCap`, not `max.size`, which no longer exists, and `minCap`/`maxCap`
+are held in the unit the vendor published them in — `capUnit` says which, and a `"GB?"` one is
+converted here under the same decimal assumption as the rate.
 
 ```bash
 node -e '
@@ -145,7 +147,8 @@ node -e '
   const GIB=1.073741824;
   const uf=u=>u==="GiB"?1:u==="GB"?GIB:(u==="TB"||u==="TB?")?GIB/1000:GIB;   // decimal assumption
   const hf=b=>b==="h"?S.hours:b==="d30"?S.hours/720:1;
-  const billed=r=>Math.max(S.stored, r.minGiB||0);
+  const capG=(v,r)=>v==null||v===Infinity?v:v/uf(r.capUnit||"GiB");  // Scaleway and STACKIT
+  const billed=r=>Math.max(S.stored, capG(r.minCap,r)||0);           // publish theirs in "GB"
   const cap=r=>{ if(r.rate===null) return null;
     const base=r.baseFee? r.baseFee.fee*hf(r.baseFee.bill)*FX[r.baseFee.cur] : 0;
     return base + billed(r)*uf(r.unit)*r.rate*hf(r.bill)*FX[r.cur]; };
@@ -160,13 +163,14 @@ node -e '
     const v=(s.base||0)+(s.perGiB||0)*o+(s.perTiB||0)*o/1024;
     return s.cap!=null?Math.min(v,s.cap):v; };
   const short=r=>{ const g=billed(r), i=ceil(r.max.iops,g), m=ceil(r.max.mbs,g);
-    return (i!=null&&S.iops>i)||(m!=null&&S.mbs>m)||(r.maxGiB!=null&&S.stored>r.maxGiB); };
+    const c=capG(r.maxCap,r);
+    return (i!=null&&S.iops>i)||(m!=null&&S.mbs>m)||(c!=null&&S.stored>c); };
   const n=v=>v===null?null:Number((v/S.stored).toFixed(6));
   const p={};
   for(const r of ROWS){ const c=cap(r), parts=[c,perf(r.iops,S.iops,r),perf(r.tput,S.mbs,r),acc(r)];
     const priced=r.rate!==null;
     p[r.id]={capacity:n(c), effective:priced?n(parts.reduce((a,x)=>a+(x||0),0)):null,
-             billedGiB:priced?billed(r):null, billedOn:r.billedOn, floor:(r.minGiB||0)>S.stored,
+             billedGiB:priced?billed(r):null, billedOn:r.billedOn, floor:(capG(r.minCap,r)||0)>S.stored,
              partial:parts.some(x=>x===null)||!!r.ops, short:short(r)};}
   console.log(JSON.stringify(p,null,1));
 '

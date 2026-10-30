@@ -295,7 +295,7 @@ tr.is-exo td.key{color:var(--exo)}
     <h3>The capacity floor is the thing the headline rate hides</h3>
     <ul>
       <li><b>AWS EFS has no minimum at all</b> and bills the bytes actually held. So do Azure's pay-as-you-go tiers and, by its own description, T Cloud Public's SFS.</li>
-      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
+      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB. Scaleway and STACKIT are the two that write GB without defining it, so their floor and their ceiling follow the unit selector like every other figure on the page — 23 and 466 GiB under the decimal assumption.</li>
       <li>Ask for less than a vendor's minimum and the row is marked <span class="short">▲</span>, its bar hatched, and the cost is what they would actually invoice. Drop the capacity control below 2,560 GiB and watch Google Basic SSD stop moving.</li>
       <li>Both chart metrics divide by the GiB you <i>asked for</i>, not the GiB billed, so a floor shows up as a higher price per gigabyte rather than disappearing into the denominator.</li>
     </ul>
@@ -326,7 +326,7 @@ tr.is-exo td.key{color:var(--exo)}
       <li><b>Scaleway</b> prints “€0.000221/HOUR” with no unit on the price table; that it is per GB follows from the legal notice beneath it, not from the number.</li>
       <li><b>Azure's pay-as-you-go tiers</b> charge per transaction. Those charges are published but cannot be turned into a monthly figure without assuming an average I/O size, so they are shown, marked <span class="np">+ops</span>, and the scenario total for those rows is a floor.</li>
       <li><b>DigitalOcean</b> publishes its throughput in Gbps, converted here at 119 MiB/s per Gbps; the High performance tier's ceiling grows by 1 Gbps per TiB above the first, so it is shown at the size being billed. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
-      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The product page says the share runs from 250 GiB, so GiB is used.</li>
+      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The feature list on the same page settles it — “From 250 GiB to 25 TiB” — so that row is read as binary throughout.</li>
       <li><b>Hetzner, Infomaniak and Cloudflare</b> sell no managed shared file system and are absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region.</li>
     </ul>
   </div>
@@ -549,8 +549,14 @@ const INF = Infinity;
 
 // billedOn: "stored"      — the capacity rate applies to the bytes actually held
 //           "provisioned" — it applies to the size of the share, empty or full
-// minGiB:   the smallest share the vendor will sell; a smaller requirement is billed at this size
-// maxGiB:   the largest share it will sell; null = not published, INF = no published ceiling
+// minCap:   the smallest share the vendor will sell; a smaller requirement is billed at this size
+// maxCap:   the largest share it will sell; null = not published, INF = no published ceiling
+// capUnit:  the unit those two are published in — "GiB" when the vendor states a binary one,
+//           which is the default and is left out, or "GB?" where it writes GB and defines
+//           nothing, in which case the capacity range follows the page's unit selector exactly
+//           as the rate does. Scaleway and STACKIT are the two; UpCloud writes "250 GB" in the
+//           size column of its price table but "From 250 GiB to 25 TiB" in the same page's
+//           feature list, so it is binary
 // iops/tput: null when performance is included in the capacity rate, otherwise a charge with its
 //           own floor. `min` is the least the vendor lets you provision, not a free allowance.
 // access:   per-GiB read and write charges (what AWS calls Elastic Throughput, and the IA and
@@ -575,7 +581,7 @@ const ROWS = [
   { id:"efs-std", vendor:"AWS EFS", cls:"Standard · Elastic Throughput", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"stored",
     rateNote:"no minimum fee, no setup charge — billed on the bytes actually held",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null, tput:null,
     access:{ read:0.04, write:0.07, cur:"USD", unit:"GiB",
              note:"Elastic Throughput, the default mode: $0.04/GiB read, $0.07/GiB written" },
@@ -587,7 +593,7 @@ const ROWS = [
   { id:"efs-prov", vendor:"AWS EFS", cls:"Standard · Provisioned Throughput", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"stored",
     rateNote:"same storage rate; throughput bought up front instead of per GiB transferred",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null,
     tput:{ min:0, per:"m", rate:7.20, freePerGiB:50/1024,
            note:"$7.20 per MiB/s-month, charged only above the 50 MiB/s per TiB that Standard storage already includes" },
@@ -599,7 +605,7 @@ const ROWS = [
     proto:"NFSv4.1", az:"≥3 AZ", sla:"99.99 %", src:"aws.amazon.com/efs/pricing" },
   { id:"efs-ia", vendor:"AWS EFS", cls:"Standard-IA", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.0266, billedOn:"stored",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null, tput:null,
     access:{ read:0.052, write:0.082, cur:"USD", unit:"GiB",
              note:"$0.012/GiB IA access on top of Elastic Throughput; the write figure is the tiering charge for data moved into the class" },
@@ -611,7 +617,7 @@ const ROWS = [
   { id:"efs-arch", vendor:"AWS EFS", cls:"Archive", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.01, billedOn:"stored",
     rateNote:"90-day minimum storage duration",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null, tput:null,
     access:{ read:0.076, write:0.106, cur:"USD", unit:"GiB",
              note:"$0.036/GiB Archive access on top of Elastic Throughput; the write figure is the tiering charge for data moved into the class" },
@@ -622,7 +628,7 @@ const ROWS = [
     proto:"NFSv4.1", az:"≥3 AZ", src:"aws.amazon.com/efs/pricing" },
   { id:"efs-1z", vendor:"AWS EFS", cls:"One Zone", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.192, billedOn:"stored",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null, tput:null,
     access:{ read:0.04, write:0.07, cur:"USD", unit:"GiB", note:"Elastic Throughput" },
     snap:null, snapNote:"through AWS Backup",
@@ -632,7 +638,7 @@ const ROWS = [
     proto:"NFSv4.1", az:"1 AZ", src:"aws.amazon.com/efs/pricing" },
   { id:"efs-1z-ia", vendor:"AWS EFS", cls:"One Zone-IA", region:"eu-central-1 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.0142, billedOn:"stored",
-    minGiB:0, maxGiB:INF,
+    minCap:0, maxCap:INF,
     iops:null, tput:null,
     access:{ read:0.052, write:0.082, cur:"USD", unit:"GiB", note:"IA access plus Elastic Throughput; the write figure is the tiering charge" },
     snap:null, snapNote:"through AWS Backup",
@@ -645,7 +651,7 @@ const ROWS = [
   { id:"azf-ssd-lrs", vendor:"Azure Files", cls:"Provisioned v2 SSD LRS", region:"Germany West Central",
     cur:"USD", unit:"GiB", bill:"h", rate:0.000196, billedOn:"provisioned",
     rateNote:"storage, IOPS and throughput are provisioned and billed separately",
-    minGiB:32, maxGiB:262144,
+    minCap:32, maxCap:262144,
     iops:{ min:3000, per:"h", rate:0.000053, note:"every provisioned IOPS is charged; 3,000 is the least you may buy" },
     tput:{ min:100, per:"h", rate:0.000077, note:"every provisioned MiB/s is charged; 100 is the least you may buy" },
     access:null,
@@ -656,7 +662,7 @@ const ROWS = [
     proto:"SMB · NFSv4.1", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
   { id:"azf-ssd-zrs", vendor:"Azure Files", cls:"Provisioned v2 SSD ZRS", region:"Germany West Central",
     cur:"USD", unit:"GiB", bill:"h", rate:0.000245, billedOn:"provisioned",
-    minGiB:32, maxGiB:262144,
+    minCap:32, maxCap:262144,
     iops:{ min:3000, per:"h", rate:0.000066 },
     tput:{ min:100, per:"h", rate:0.000097 },
     access:null,
@@ -667,7 +673,7 @@ const ROWS = [
     proto:"SMB · NFSv4.1", az:"3 AZ", src:"azure.microsoft.com/pricing/details/storage/files" },
   { id:"azf-hdd-lrs", vendor:"Azure Files", cls:"Provisioned v2 HDD LRS", region:"Germany West Central",
     cur:"USD", unit:"GiB", bill:"h", rate:0.000013, billedOn:"provisioned",
-    minGiB:32, maxGiB:262144,
+    minCap:32, maxCap:262144,
     iops:{ min:500, per:"h", rate:0.000072, note:"every provisioned IOPS is charged; 500 is the least you may buy" },
     tput:{ min:60, per:"h", rate:0.000107, note:"every provisioned MiB/s is charged; 60 is the least you may buy" },
     access:null,
@@ -678,7 +684,7 @@ const ROWS = [
     proto:"SMB", az:"single datacentre", src:"azure.microsoft.com/pricing/details/storage/files" },
   { id:"azf-hdd-zrs", vendor:"Azure Files", cls:"Provisioned v2 HDD ZRS", region:"Germany West Central",
     cur:"USD", unit:"GiB", bill:"h", rate:0.000016, billedOn:"provisioned",
-    minGiB:32, maxGiB:262144,
+    minCap:32, maxCap:262144,
     iops:{ min:500, per:"h", rate:0.000089 },
     tput:{ min:60, per:"h", rate:0.000133 },
     access:null,
@@ -690,7 +696,7 @@ const ROWS = [
   { id:"azf-prem-lrs", vendor:"Azure Files", cls:"Premium (provisioned v1) LRS", region:"Germany West Central",
     cur:"USD", unit:"GiB", bill:"m", rate:0.192, billedOn:"provisioned",
     rateNote:"the older model: IOPS and throughput follow the provisioned size and are not billed separately",
-    minGiB:100, maxGiB:102400,
+    minCap:100, maxCap:102400,
     iops:null, tput:null, access:null,
     snap:{ rate:0.163, cur:"USD", unit:"GiB", bill:"m" },
     perf:{ iops:"size", mbs:"size", note:"baseline IOPS = 3,000 + 1 per provisioned GiB; throughput = 100 + 0.1 MiB/s per GiB" },
@@ -700,7 +706,7 @@ const ROWS = [
   { id:"azf-txn-lrs", vendor:"Azure Files", cls:"Transaction optimised LRS", region:"Germany West Central",
     cur:"USD", unit:"GB", bill:"m", rate:0.0577, billedOn:"stored",
     rateNote:"pay-as-you-go: billed on the bytes held, plus every transaction",
-    minGiB:0, maxGiB:102400,
+    minCap:0, maxCap:102400,
     iops:null, tput:null, access:null,
     ops:{ note:"$0.015 per 10,000 writes and lists, $0.0015 per 10,000 reads and protocol operations" },
     snap:null, snapNote:"charged at the same per-GB rate as the share",
@@ -711,7 +717,7 @@ const ROWS = [
   { id:"azf-hot-lrs", vendor:"Azure Files", cls:"Hot LRS (pay-as-you-go)", region:"Germany West Central",
     cur:"USD", unit:"GB", bill:"m", rate:0.0271, billedOn:"stored",
     rateNote:"pay-as-you-go: billed on the bytes held, plus every transaction",
-    minGiB:0, maxGiB:102400,
+    minCap:0, maxCap:102400,
     iops:null, tput:null, access:null,
     ops:{ note:"$0.0702 per 10,000 writes and lists, $0.00559 per 10,000 reads" },
     snap:null, snapNote:"charged at the same per-GB rate as the share",
@@ -722,7 +728,7 @@ const ROWS = [
   { id:"azf-cool-lrs", vendor:"Azure Files", cls:"Cool LRS (pay-as-you-go)", region:"Germany West Central",
     cur:"USD", unit:"GB", bill:"m", rate:0.015, billedOn:"stored",
     rateNote:"pay-as-you-go, plus a retrieval charge on every byte read",
-    minGiB:0, maxGiB:102400,
+    minCap:0, maxCap:102400,
     iops:null, tput:null,
     access:{ read:0.01, write:0, cur:"USD", unit:"GB", note:"$0.01 per GB retrieved" },
     ops:{ note:"$0.13 per 10,000 writes, $0.013 per 10,000 reads, $0.0702 per 10,000 lists" },
@@ -736,7 +742,7 @@ const ROWS = [
   { id:"gfs-basic-hdd", vendor:"Google Filestore", cls:"Basic HDD", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.19, billedOn:"provisioned",
     rateNote:"the per-instance fee below 1 TiB is waived once the instance reaches 1 TiB",
-    minGiB:1024, maxGiB:65434,
+    minCap:1024, maxCap:65434,
     iops:null, tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m", note:"Filestore backups" },
     perf:{ iops:"fixed", mbs:"fixed", note:"standard fixed performance, scaling with capacity" },
@@ -746,7 +752,7 @@ const ROWS = [
   { id:"gfs-basic-ssd", vendor:"Google Filestore", cls:"Basic SSD", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.36, billedOn:"provisioned",
     rateNote:"smallest instance is 2.5 TiB — the highest capacity floor on this page",
-    minGiB:2560, maxGiB:65434,
+    minCap:2560, maxCap:65434,
     iops:null, tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
     perf:{ iops:"fixed", mbs:"fixed", note:"premium fixed performance" },
@@ -755,7 +761,7 @@ const ROWS = [
     proto:"NFSv3", az:"zonal", src:"cloud.google.com/filestore/pricing" },
   { id:"gfs-zonal", vendor:"Google Filestore", cls:"Zonal", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.30, billedOn:"provisioned",
-    minGiB:1024, maxGiB:102400,
+    minCap:1024, maxCap:102400,
     iops:null, tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
     perf:{ iops:"fixed", mbs:"fixed", note:"performance scales with capacity unless custom performance is switched on" },
@@ -766,7 +772,7 @@ const ROWS = [
     cur:"USD", unit:"GiB", bill:"m", rate:0.144, billedOn:"provisioned",
     baseFee:{ fee:24.00, cur:"USD", bill:"m", note:"$24.00 per instance per month" },
     rateNote:"cheaper per GiB, but a per-instance fee and every IOPS billed",
-    minGiB:1024, maxGiB:102400,
+    minCap:1024, maxCap:102400,
     iops:{ min:0, per:"m", rate:0.0174, note:"$0.0174 per provisioned IOPS-month" },
     tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
@@ -777,7 +783,7 @@ const ROWS = [
   { id:"gfs-regional", vendor:"Google Filestore", cls:"Regional", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.54, billedOn:"provisioned",
     rateNote:"the only Google tier that starts below 1 TiB",
-    minGiB:100, maxGiB:102400,
+    minCap:100, maxCap:102400,
     iops:null, tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
     perf:{ iops:"fixed", mbs:"fixed" },
@@ -788,7 +794,7 @@ const ROWS = [
   { id:"gfs-regional-cp", vendor:"Google Filestore", cls:"Regional · custom performance", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.252, billedOn:"provisioned",
     baseFee:{ fee:48.00, cur:"USD", bill:"m", note:"$48.00 per instance per month" },
-    minGiB:100, maxGiB:102400,
+    minCap:100, maxCap:102400,
     iops:{ min:0, per:"m", rate:0.0324, note:"$0.0324 per provisioned IOPS-month" },
     tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
@@ -798,7 +804,7 @@ const ROWS = [
     proto:"NFSv3 · NFSv4.1", az:"regional", src:"cloud.google.com/filestore/pricing" },
   { id:"gfs-ent", vendor:"Google Filestore", cls:"Enterprise (multishares)", region:"europe-west3 · Frankfurt",
     cur:"USD", unit:"GiB", bill:"m", rate:0.54, billedOn:"provisioned",
-    minGiB:1024, maxGiB:10240,
+    minCap:1024, maxCap:10240,
     iops:null, tput:null, access:null,
     snap:{ rate:0.10, cur:"USD", unit:"GiB", bill:"m" },
     perf:{ iops:"fixed", mbs:"fixed", note:"performance scales with capacity" },
@@ -810,7 +816,7 @@ const ROWS = [
   { id:"ovh-fs", vendor:"OVHcloud", cls:"File Storage", region:"3-AZ and 1-AZ regions",
     cur:"EUR", unit:"GB?", bill:"h", rate:0.000194, billedOn:"provisioned",
     rateNote:"the same rate in 3-AZ and 1-AZ regions — zone redundancy is not priced separately",
-    minGiB:150, maxGiB:10240,
+    minCap:150, maxCap:10240,
     iops:null, tput:null, access:null,
     snap:{ rate:0.000059, cur:"EUR", unit:"GB?", bill:"h", note:"billed on the space the snapshot uses" },
     perf:{ iops:16000, mbs:128, note:"24 IOPS and 0.25 MiB/s per provisioned GiB, up to 16,000 IOPS and 128 MiB/s" },
@@ -823,7 +829,7 @@ const ROWS = [
   { id:"scw-fs", vendor:"Scaleway", cls:"File System", region:"fr-par",
     cur:"EUR", unit:"GB?", bill:"h", rate:0.000221, billedOn:"provisioned",
     rateNote:"the price page prints “€0.000221/HOUR” with no unit; the per-GB reading comes from its legal notice",
-    minGiB:25, maxGiB:51200,
+    minCap:25, maxCap:50000, capUnit:"GB?",
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:25000, mbs:200,
@@ -837,7 +843,7 @@ const ROWS = [
   { id:"ion-nfs", vendor:"IONOS", cls:"Network File Storage", region:"Germany · Spain · France · UK · USA",
     cur:"EUR", unit:"TB?", bill:"d30", rate:154.00, billedOn:"provisioned",
     rateNote:"€154.00 per TB per 30 days — quoted per TB, with no decimal or binary basis stated",
-    minGiB:2048, maxGiB:43008,
+    minCap:2048, maxCap:43008,
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:"≈6,000 per TiB", mbs:"≈370 MB/s per TiB",
@@ -849,7 +855,7 @@ const ROWS = [
   /* ---------------- STACKIT ---------------- */
   { id:"st-std", vendor:"STACKIT", cls:"File Storage Standard", region:"EU01 · Germany South",
     cur:"EUR", unit:"GB?", bill:"h", rate:0.00031135735, billedOn:"provisioned",
-    minGiB:500, maxGiB:20480,
+    minCap:500, maxCap:20000, capUnit:"GB?",
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:null, mbs:null, note:"no IOPS or throughput figure published for any of the three tiers" },
@@ -859,7 +865,7 @@ const ROWS = [
     src:"stackit.com — price list v1.0.44 (06.10.2026)" },
   { id:"st-prem", vendor:"STACKIT", cls:"File Storage Premium", region:"EU01 · Germany South",
     cur:"EUR", unit:"GB?", bill:"h", rate:0.00050547002, billedOn:"provisioned",
-    minGiB:500, maxGiB:20480,
+    minCap:500, maxCap:20000, capUnit:"GB?",
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:null, mbs:null, note:"nothing published to say what the extra 62 % buys" },
@@ -869,7 +875,7 @@ const ROWS = [
     src:"stackit.com — price list v1.0.44 (06.10.2026)" },
   { id:"st-ultra", vendor:"STACKIT", cls:"File Storage Ultra", region:"EU01 · Germany South",
     cur:"EUR", unit:"GB?", bill:"h", rate:0.00089765684, billedOn:"provisioned",
-    minGiB:500, maxGiB:20480,
+    minCap:500, maxCap:20000, capUnit:"GB?",
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:null, mbs:null },
@@ -882,12 +888,12 @@ const ROWS = [
   { id:"upc-fs", vendor:"UpCloud", cls:"File Storage", region:"DE-FRA1 · FI-HEL · NL-AMS · SE-STO · DK-CPH",
     cur:"EUR", unit:"GiB", bill:"d30", rate:0.15, billedOn:"provisioned",
     rateNote:"€37.50/month for the smallest share, then €0.15 per GiB; the price table writes “250 GB” in the size column and “per GiB” in the price column",
-    minGiB:250, maxGiB:25600,
+    minCap:250, maxCap:25600,
     iops:null, tput:null, access:null,
     snap:null, snapNote:"no snapshot line on the price list",
     perf:{ iops:null, mbs:null, note:"no IOPS or throughput figure published; up to 50 shares per instance, 16 TiB per file, 50 GiB increments" },
     max:{ iops:null, mbs:null },
-    maxNote:"“instances start at 250 GB and scale up to 25 TB per instance” is the whole of what UpCloud publishes; more capacity than that means more instances",
+    maxNote:"“From 250 GiB to 25 TiB” on the price page, with 50 GiB increments, up to 50 shares per instance and up to 16 TiB in one file — the whole of what UpCloud publishes. More capacity than that means more instances",
     proto:"NFS", az:"managed redundancy, model not published", sla:"99.999 % uptime",
     src:"upcloud.com/pricing" },
 
@@ -895,7 +901,7 @@ const ROWS = [
   { id:"do-nfs-std", vendor:"DigitalOcean", cls:"Network File Storage · Standard", region:"AMS (Amsterdam) — no Frankfurt region",
     cur:"USD", unit:"GiB", bill:"m", rate:0.15, billedOn:"provisioned",
     rateNote:"flat price across every supported region",
-    minGiB:50, maxGiB:32768,
+    minCap:50, maxCap:32768,
     iops:null, tput:null, access:null,
     snap:{ rate:0.06, cur:"USD", unit:"GiB", bill:"m", note:"billed on the restorable file size" },
     perf:{ iops:10000, mbs:119, note:"10,000 read and 7,000 write IOPS, and 1 Gbps — 119 MiB/s — aggregated across every client" },
@@ -905,7 +911,7 @@ const ROWS = [
     src:"digitalocean.com/pricing/network-file-storage" },
   { id:"do-nfs-hp", vendor:"DigitalOcean", cls:"Network File Storage · High performance", region:"AMS (Amsterdam) — no Frankfurt region",
     cur:"USD", unit:"GiB", bill:"m", rate:0.30, billedOn:"provisioned",
-    minGiB:500, maxGiB:32768,
+    minCap:500, maxCap:32768,
     iops:null, tput:null, access:null,
     snap:{ rate:0.06, cur:"USD", unit:"GiB", bill:"m", note:"billed on the restorable file size" },
     perf:{ iops:100000, mbs:"size", note:"up to 100,000 read and 70,000 write IOPS; throughput starts at 8 Gbps and grows with the share" },
@@ -918,7 +924,7 @@ const ROWS = [
   { id:"tc-sfs", vendor:"T Cloud Public", cls:"Scalable File Service", region:"Germany (formerly Open Telekom Cloud)",
     cur:"EUR", unit:"GiB", bill:"m", rate:null, billedOn:"stored",
     rateNote:"no rate card — calculator and console only. The pricing-model page states only that SFS follows the EVS model and that, unlike EVS, “only the actual stored data is billed”.",
-    minGiB:null, maxGiB:null,
+    minCap:null, maxCap:null,
     iops:null, tput:null, access:null,
     snap:null, snapNote:"not published",
     perf:{ iops:null, mbs:null, note:"no performance figures published alongside the prices" },
@@ -967,14 +973,20 @@ function ufc(unit){
   return uf(unit);
 }
 
+/* The capacity range in GiB. Scaleway and STACKIT publish theirs in a "GB" they never define,
+   so it follows the page's unit selector exactly as their rate does rather than being read as
+   binary by default — their 500 GB floor is 466 GiB under the decimal assumption. */
+const capGiB = (v, r) => v === null || v === undefined || v === INF ? v : v / ufc(r.capUnit || "GiB");
+const floorGiB   = r => capGiB(r.minCap, r) || 0;
+const ceilingGiB = r => capGiB(r.maxCap, r);
+
 /* The capacity a vendor actually bills: the bytes held, or the share size, never below the
    smallest share they sell. */
 function billedGiB(r){
-  const floor = r.minGiB || 0;
-  return Math.max(S.stored, floor);
+  return Math.max(S.stored, floorGiB(r));
 }
 function overMinimum(r){
-  return (r.minGiB || 0) > S.stored;
+  return floorGiB(r) > S.stored;
 }
 
 function capacityCost(r){
@@ -1033,7 +1045,7 @@ const scales = spec => spec !== null && typeof spec === "object";
 function gibLabel(v){
   if(v === null || v === undefined) return "not published";
   if(v === INF) return "no published ceiling";
-  return v < 1024 ? num(v) + " GiB" : num(Math.round(v / 102.4) / 10) + " TiB";
+  return v < 1024 ? num(Math.round(v)) + " GiB" : num(Math.round(v / 102.4) / 10) + " TiB";
 }
 
 function shortfall(r){
@@ -1042,7 +1054,8 @@ function shortfall(r){
   const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
   if(iops != null && S.iops > iops) out.push("tops out at " + num(Math.round(iops)) + " IOPS" + at(r.max.iops));
   if(mbs  != null && S.mbs  > mbs)  out.push("tops out at " + num(Math.round(mbs))  + " MiB/s" + at(r.max.mbs));
-  if(r.maxGiB != null && S.stored > r.maxGiB) out.push("largest share is " + gibLabel(r.maxGiB));
+  const cap = ceilingGiB(r);
+  if(cap != null && S.stored > cap) out.push("largest share is " + gibLabel(cap));
   return out;
 }
 
@@ -1062,7 +1075,8 @@ function publishedRate(r){
 function billedCell(r){
   if(r.rate === null) return "—";
   const on = r.billedOn === "stored" ? "bytes held" : "share size";
-  const floor = r.minGiB ? num(r.minGiB) + " GiB minimum" : (r.minGiB === 0 ? "no minimum" : "not published");
+  const floor = r.minCap ? gibLabel(floorGiB(r)) + " minimum"
+              : (r.minCap === 0 ? "no minimum" : "not published");
   const warn = overMinimum(r) ? ' <span class="short" title="The scenario asks for less than this vendor will sell, so the minimum is what gets billed">&#9650;</span>' : "";
   return '<span class="chip">' + esc(on) + "</span>" + warn
        + '<span class="sub" style="text-align:left">' + esc(floor)
@@ -1102,10 +1116,10 @@ function perfCell(r){
    figure moves with the control rather than quoting a maximum reached only at 100 TiB. */
 function limitsCell(r){
   const gib = billedGiB(r);
-  const range = (r.minGiB == null && r.maxGiB == null)
+  const range = (r.minCap == null && r.maxCap == null)
     ? '<span class="np">not published</span>'
-    : '<span class="chip">' + esc((r.minGiB === 0 ? "no minimum" : gibLabel(r.minGiB))
-                                  + " – " + gibLabel(r.maxGiB)) + "</span>";
+    : '<span class="chip">' + esc((r.minCap === 0 ? "no minimum" : gibLabel(floorGiB(r)))
+                                  + " – " + gibLabel(ceilingGiB(r))) + "</span>";
   const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
   const one = (v, label) => v === null ? '<span class="np">' + label + " not published</span>"
             : v === INF ? "no " + label + " ceiling"
