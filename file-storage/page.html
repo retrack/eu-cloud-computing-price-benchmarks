@@ -82,7 +82,7 @@
     <h3>The capacity floor is the thing the headline rate hides</h3>
     <ul>
       <li><b>AWS EFS has no minimum at all</b> and bills the bytes actually held. So do Azure's pay-as-you-go tiers and, by its own description, T Cloud Public's SFS.</li>
-      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB.</li>
+      <li><b>Everyone else bills the share, empty or full.</b> Google Filestore Basic SSD will not sell you less than 2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB; OVHcloud at 150 GiB; DigitalOcean's standard tier at 50 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB. Scaleway and STACKIT are the two that write GB without defining it, so their floor and their ceiling follow the unit selector like every other figure on the page — 23 and 466 GiB under the decimal assumption.</li>
       <li>Ask for less than a vendor's minimum and the row is marked <span class="short">▲</span>, its bar hatched, and the cost is what they would actually invoice. Drop the capacity control below 2,560 GiB and watch Google Basic SSD stop moving.</li>
       <li>Both chart metrics divide by the GiB you <i>asked for</i>, not the GiB billed, so a floor shows up as a higher price per gigabyte rather than disappearing into the denominator.</li>
     </ul>
@@ -113,7 +113,7 @@
       <li><b>Scaleway</b> prints “€0.000221/HOUR” with no unit on the price table; that it is per GB follows from the legal notice beneath it, not from the number.</li>
       <li><b>Azure's pay-as-you-go tiers</b> charge per transaction. Those charges are published but cannot be turned into a monthly figure without assuming an average I/O size, so they are shown, marked <span class="np">+ops</span>, and the scenario total for those rows is a floor.</li>
       <li><b>DigitalOcean</b> publishes its throughput in Gbps, converted here at 119 MiB/s per Gbps; the High performance tier's ceiling grows by 1 Gbps per TiB above the first, so it is shown at the size being billed. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent to compare against.</li>
-      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The product page says the share runs from 250 GiB, so GiB is used.</li>
+      <li><b>UpCloud</b> publishes no IOPS or throughput figure either, and its price table writes “250 GB” in the size column beside “per GiB” in the price column. The feature list on the same page settles it — “From 250 GiB to 25 TiB” — so that row is read as binary throughout.</li>
       <li><b>Hetzner, Infomaniak and Cloudflare</b> sell no managed shared file system and are absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region.</li>
     </ul>
   </div>

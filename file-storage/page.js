@@ -23,14 +23,20 @@ function ufc(unit){
   return uf(unit);
 }
 
+/* The capacity range in GiB. Scaleway and STACKIT publish theirs in a "GB" they never define,
+   so it follows the page's unit selector exactly as their rate does rather than being read as
+   binary by default — their 500 GB floor is 466 GiB under the decimal assumption. */
+const capGiB = (v, r) => v === null || v === undefined || v === INF ? v : v / ufc(r.capUnit || "GiB");
+const floorGiB   = r => capGiB(r.minCap, r) || 0;
+const ceilingGiB = r => capGiB(r.maxCap, r);
+
 /* The capacity a vendor actually bills: the bytes held, or the share size, never below the
    smallest share they sell. */
 function billedGiB(r){
-  const floor = r.minGiB || 0;
-  return Math.max(S.stored, floor);
+  return Math.max(S.stored, floorGiB(r));
 }
 function overMinimum(r){
-  return (r.minGiB || 0) > S.stored;
+  return floorGiB(r) > S.stored;
 }
 
 function capacityCost(r){
@@ -89,7 +95,7 @@ const scales = spec => spec !== null && typeof spec === "object";
 function gibLabel(v){
   if(v === null || v === undefined) return "not published";
   if(v === INF) return "no published ceiling";
-  return v < 1024 ? num(v) + " GiB" : num(Math.round(v / 102.4) / 10) + " TiB";
+  return v < 1024 ? num(Math.round(v)) + " GiB" : num(Math.round(v / 102.4) / 10) + " TiB";
 }
 
 function shortfall(r){
@@ -98,7 +104,8 @@ function shortfall(r){
   const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
   if(iops != null && S.iops > iops) out.push("tops out at " + num(Math.round(iops)) + " IOPS" + at(r.max.iops));
   if(mbs  != null && S.mbs  > mbs)  out.push("tops out at " + num(Math.round(mbs))  + " MiB/s" + at(r.max.mbs));
-  if(r.maxGiB != null && S.stored > r.maxGiB) out.push("largest share is " + gibLabel(r.maxGiB));
+  const cap = ceilingGiB(r);
+  if(cap != null && S.stored > cap) out.push("largest share is " + gibLabel(cap));
   return out;
 }
 
@@ -118,7 +125,8 @@ function publishedRate(r){
 function billedCell(r){
   if(r.rate === null) return "—";
   const on = r.billedOn === "stored" ? "bytes held" : "share size";
-  const floor = r.minGiB ? num(r.minGiB) + " GiB minimum" : (r.minGiB === 0 ? "no minimum" : "not published");
+  const floor = r.minCap ? gibLabel(floorGiB(r)) + " minimum"
+              : (r.minCap === 0 ? "no minimum" : "not published");
   const warn = overMinimum(r) ? ' <span class="short" title="The scenario asks for less than this vendor will sell, so the minimum is what gets billed">&#9650;</span>' : "";
   return '<span class="chip">' + esc(on) + "</span>" + warn
        + '<span class="sub" style="text-align:left">' + esc(floor)
@@ -158,10 +166,10 @@ function perfCell(r){
    figure moves with the control rather than quoting a maximum reached only at 100 TiB. */
 function limitsCell(r){
   const gib = billedGiB(r);
-  const range = (r.minGiB == null && r.maxGiB == null)
+  const range = (r.minCap == null && r.maxCap == null)
     ? '<span class="np">not published</span>'
-    : '<span class="chip">' + esc((r.minGiB === 0 ? "no minimum" : gibLabel(r.minGiB))
-                                  + " – " + gibLabel(r.maxGiB)) + "</span>";
+    : '<span class="chip">' + esc((r.minCap === 0 ? "no minimum" : gibLabel(floorGiB(r)))
+                                  + " – " + gibLabel(ceilingGiB(r))) + "</span>";
   const iops = ceilAt(r.max.iops, gib), mbs = ceilAt(r.max.mbs, gib);
   const one = (v, label) => v === null ? '<span class="np">' + label + " not published</span>"
             : v === INF ? "no " + label + " ceiling"

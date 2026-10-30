@@ -32,7 +32,9 @@ Four behaviours are specific to this page:
 - **Capacity floors are modelled.** Google Filestore Basic SSD will not sell a share below
   2.5 TiB; Basic HDD, Zonal and Enterprise stop at 1 TiB; IONOS starts at 2 TB; DigitalOcean's
   high-performance tier at 500 GiB and STACKIT's resource pool at 500 GB; UpCloud at 250 GiB;
-  OVHcloud at 150 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB. Ask for less and the row is
+  OVHcloud at 150 GiB; Azure's provisioned tiers at 32 GiB; Scaleway at 25 GB. The two stated in
+  an undefined GB — Scaleway's and STACKIT's — follow the page's unit selector like any other
+  figure, so under the decimal assumption they are 23 and 466 GiB. Ask for less and the row is
   marked ▲, its bar hatched, and the cost is what the vendor would actually invoice. Both
   chart metrics divide by the GiB you *asked for*, not the GiB billed, so a floor shows up as
   a higher price per gigabyte instead of disappearing into the denominator.
@@ -67,6 +69,11 @@ Four behaviours are specific to this page:
   missing component as zero.
 - Minimum storage durations (EFS Archive, 90 days) and minimum billable file sizes (EFS IA and
   Archive, 128 KiB) are shown but not monetised.
+- The capacity range is held in the unit the vendor published it in, not converted by hand.
+  `capUnit` says which: `GiB` where the vendor states a binary one, `GB?` where it writes GB and
+  defines nothing, in which case the range follows the page's unit selector exactly as the rate
+  does. The two need not agree — IONOS quotes its rate per an undefined TB while sizing its
+  cluster in TiB.
 - Published limits come from the documentation, not the price pages, and are recorded as the
   vendor states them: where a vendor splits read from write, the figure checked is the read side
   and the note carries both. A default quota that can be raised on request (AWS) is recorded at
@@ -85,10 +92,10 @@ Four behaviours are specific to this page:
 | IONOS performance | published as iozone benchmark results — ≈24,000 read and ≈18,000 write IOPS on a 4 TiB cluster, ≈370 MB/s read per TiB, scaling linearly — rather than as a ceiling IONOS undertakes to hold. Shown in the Performance column; no ⚠ check is made against it |
 | IONOS unit | quoted per TB without stating which TB, so both the TB→GB and the GiB→GB conversions follow the unit selector — while the cluster size the same vendor publishes is stated in TiB |
 | Scaleway | the price table prints "€0.000221/HOUR" with no unit; that it is per GB follows from the legal notice beneath it, not from the number. Its throughput ceiling is published in MB/s and is not converted here, so the 200 shown are 191 MiB/s |
-| Capacity ranges in GB | Scaleway (25 GB – 50 TB), STACKIT (500 GB – 20 TB) and UpCloud (250 GB – 25 TB) state their capacity ranges in decimal units; the page holds them in its GiB fields unconverted, so those three ranges are read about 7 % high |
+| Capacity ranges in GB | Scaleway (25 GB – 50 TB) and STACKIT (500 GB – 20 TB) state their capacity ranges in a GB they never define. Both now carry `capUnit:"GB?"` and follow the unit selector, so the selector moves their floor and ceiling by 7.4 % along with everything else. UpCloud is *not* among them: its price table writes "250 GB" in the size column, but the feature list on the same page says "From 250 GiB to 25 TiB", so that row is binary |
 | Azure pay-as-you-go | transaction charges published but not monetisable without an I/O-size assumption; those rows are floors |
 | Azure Files reservations | up to 36 % off storage, not modelled — like every other commitment discount on these pages |
-| UpCloud | no IOPS or throughput figure published anywhere — the capacity range, "250 GB to 25 TB per instance", is the whole of it. The price table writes "250 GB" in the size column beside "per GiB" in the price column, and the product page's "from 250 GiB" is what is used |
+| UpCloud | no IOPS or throughput figure published anywhere — "From 250 GiB to 25 TiB", 50 GiB increments, 50 shares per instance and 16 TiB per file is the whole of it. Its price table writes "250 GB" in the size column beside "per GiB" in the price column; the feature list on the same page settles it as binary, and the product page's looser "250 GB to 25 TB" is not what is used |
 | DigitalOcean | throughput published in Gbps, converted here at 119 MiB/s per Gbps; the high performance tier's ceiling grows by 1 Gbps per TiB above the first. Its only European region for this product is Amsterdam — there is no Frankfurt equivalent. |
 | Hetzner, Infomaniak, Cloudflare | no managed shared file system; absent by design. Hetzner's Storage Box is a standalone product on fixed plans, not a file system instances mount inside a region. |
 

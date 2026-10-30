@@ -205,8 +205,10 @@ is applied to, and what the vendor will refuse to sell you.
   bill:"h",             // "h" per hour | "m" per month | "d30" the price list quotes a 30-day month
   rate:0.000196,        // capacity, per unit, per `bill` period; null = no public price
   billedOn:"provisioned",          // "stored" = the bytes held | "provisioned" = the share, empty or full
-  minGiB:32,            // smallest share the vendor sells; 0 = none, null = not published
-  maxGiB:262144,        // largest it sells; null = not published, INF = no published ceiling
+  minCap:32,            // smallest share the vendor sells; 0 = none, null = not published
+  maxCap:262144,        // largest it sells; null = not published, INF = no published ceiling
+  capUnit:"GiB",        // the unit those two are published in; omitted when "GiB"
+
   baseFee:null,         // OR a flat per-instance charge, e.g. Google custom performance
   iops:{ min:3000, per:"h", rate:0.000053 },   // null = IOPS included in `rate`
   tput:{ min:100, per:"h", rate:0.000077 },    // null = throughput included
@@ -221,10 +223,19 @@ is applied to, and what the vendor will refuse to sell you.
 
 The shapes that matter:
 
-- **`billedOn` and `minGiB` together are the headline of this page.** A vendor billing
-  `provisioned` capacity charges `max(data held, minGiB)`, so asking for less than the floor
+- **`billedOn` and `minCap` together are the headline of this page.** A vendor billing
+  `provisioned` capacity charges `max(data held, minCap)`, so asking for less than the floor
   does not make the row cheaper — it makes the price per gigabyte worse, which is exactly how
   the chart shows it. Both chart metrics divide by the GiB *asked for*, never the GiB billed.
+- **`capUnit` is the unit the capacity range is published in**, and it is not always the unit
+  the rate is published in. Record each in the vendor's own terms and let the page convert:
+  Scaleway sells "25 GB to 50 TB" and STACKIT a "500 GB to 20 TB" resource pool, neither
+  defining the basis, so both carry `capUnit:"GB?"` and follow the page's unit selector exactly
+  as their rate does — STACKIT's floor is 466 GiB under the decimal assumption, not 500.
+  IONOS is the mirror image: its rate is quoted per an undefined TB but its cluster size is
+  stated in TiB, so `unit:"TB?"` sits beside the default `capUnit`. Check the price page before
+  assuming — UpCloud writes "250 GB" in the size column of its price table and "From 250 GiB to
+  25 TiB" in the feature list on the same page, so that row is binary.
 - **`min` on `iops`/`tput` is a floor, not an allowance.** It is the least the vendor will
   sell. Azure Files provisioned v2 includes nothing and will not sell fewer than 3,000 IOPS
   on SSD, so a 32 GiB share is dominated by its performance floor.
@@ -248,7 +259,7 @@ The shapes that matter:
   `ceilAt()` in `page.js` resolves one against the capacity being billed, and both the ⚠ check
   and the Published limits column use it, so the figure shown moves with the capacity control
   rather than quoting a maximum reached only at 100 TiB. The capacity ceiling is **not** in
-  `max` — it is `maxGiB`, stated once beside `minGiB`. Where a vendor splits read from write,
+  `max` — it is `maxCap`, stated once beside `minCap`. Where a vendor splits read from write,
   record the read side and put both in `maxNote`. Record a default quota that can be raised on
   request at its default (AWS), and do not record a measured benchmark as a ceiling at all:
   IONOS publishes iozone results, so its `max` is `null` and the figures live in `perf`.
